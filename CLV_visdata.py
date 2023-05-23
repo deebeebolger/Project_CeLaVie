@@ -5,44 +5,57 @@ import glob
 import os
 import matplotlib.pyplot as plt
 
-data_folder_E1 = '/Users/bolger/Documents/work/Projects/Project_CeLaVie/Data/E1_PreprocData'
-data_folder_E2 = '/Users/bolger/Documents/work/Projects/Project_CeLaVie/Data/E2_PreprocData'
+base_dir = '/Users/bolger/Documents/work/Projects/Project_CeLaVie/Data'
 
 skool = 'Ecole1'
-blocknom = 'RS1'
-Sujetnum = 'S18'
+block = 'RS2'
+Sujetnums = ['S18', 'S19', 'S20', 'S21', 'S22']  #
 
 if skool == 'Ecole1':
-    fulldir_curr = os.path.join(data_folder_E1, Sujetnum)
-    fulldir_content = os.listdir(fulldir_curr)
+    data_folder = os.path.join(base_dir, 'E1_PreprocData')
 elif skool == 'Ecole2':
-    fulldir_curr = os.path.join(data_folder_E2, Sujetnum)
-    fulldir_content = os.listdir(fulldir_curr)
+    data_folder = os.path.join(base_dir, 'E2_PreprocData')
+AllPSD = []
 
+fig, axs = plt.subplots(len(Sujetnums), 1)
 
-filenom = [x for x in fulldir_content if x.startswith(blocknom) & x.endswith('.fif')]
-fullpath_data = os.path.join(fulldir_curr, filenom[0])
-RawIn = mne.io.read_raw_fif(fullpath_data, preload=False)
+for counter, sujs in enumerate(Sujetnums):
+    datadir_curr = os.path.join(data_folder, sujs)
+    datadir_content = os.listdir(datadir_curr)
+    startw = block+'_'+sujs
+    currfile_title = [x for x in datadir_content if x.startswith(startw)& x.endswith('.fif')]
+    fulldir_curr = os.path.join(datadir_curr, currfile_title[0])
+    RawIn = mne.io.read_raw_fif(fulldir_curr, preload=True)
+    sfreq = RawIn.info['sfreq']
 
-events_curr = mne.find_events(RawIn, initial_event=True, stim_channel=None)
+    RawData = RawIn.get_data()  # Get the rawdata array with structure: electrodes X time
+    PSD, freqs = mne.time_frequency.psd_array_welch(RawData[0:127,:], sfreq, fmin=1, fmax=60, n_fft=2048, n_overlap=0, average='mean')
+    AllPSD.append(PSD)
 
-# Visualize the continuous data
-RawIn.plot_sensors()
-RawIn.plot(block=True, title= 'Continuous Data : ' + filenom[0])
+    axs[counter].semilogy(freqs, np.transpose(PSD))
+    if counter == len(Sujetnums)-1:
+        axs[counter].set_xlabel('Frequency (Hz)')
+    if counter <len(Sujetnums)-1:
+        axs[counter].get_xaxis().set_ticks([])
+        axs[counter].spines['bottom'].set_visible(False)
+    axs[counter].set_ylabel('log(Power)')
+    axs[counter].set_frame_on(1)
+    axs[counter].set_title(block + ' ' + sujs)
+    axs[counter].spines['top'].set_visible(False)
+    axs[counter].spines['right'].set_visible(False)
 
-# Resample the data to 128Hz (for microstate analysis).
-srate_div = 4
-srate = RawIn.info['sfreq']
-srate_new = srate/srate_div
-RawIn_rs = RawIn.copy().resample(sfreq=srate_new)
+plt.show()
 
-RawInLP_pick = RawIn_lpass.copy().pick_types(meg=False, eeg=True, stim=False, eog=False, misc=False, exclude=[])
-RawIn_pick = RawIn.copy().pick_types(meg=False, eeg=True, stim=False, eog=False, misc=False, exclude=[])
-RawInLP_pick.plot(block=True, title= 'Continuous Data low-pass filtered (40Hz) : ' + filenom[0], n_channels=40, bad_color='r', butterfly=False)
+# Calculate the mean PSD across the participants.
+allpsd = np.asarray(AllPSD)
+psd_mean = np.mean(allpsd, 0)
+plt.semilogy(freqs, np.transpose(psd_mean))
+plt.xlabel('Frequency (Hz)')
+plt.ylabel('log(power)')
+plt.title('Average of '+ skool + ' '+ block + ' ( 5 participants)')
+plt.box(1)
+plt.show()
 
-fig, axs = plt.subplots(2, 1)
-for scnt, axs_curr in enumerate(axs):
- mne.viz.plot_raw_psd(RawInLP_pick, fmin=0.1, fmax=60, ax=axs_curr)
 
 
 

@@ -18,14 +18,33 @@ def create_dir(save_dir, sujcurr):
 
     return curr_savepath
 
+def create_filter(f_p, sfreq, dataIn):
+    """
+    Function to apply a long-duration, FIR low-pass filter with a steep cutoff.
+    :param f_p: low-pass cutoff.
+    :param sfreq: sampling frequency.
+    :param dataIn: input data.
+    :return: datafilt - filtered data.
+    """
+    transBW = 0.5
+    f_s = f_p + transBW
+    filtdur = 10
+    filtlen = int(sfreq*filtdur)
+
+    datafilt = dataIn.copy().filter(None, f_p, h_trans_bandwidth=transBW, filter_length= '%ss' % filtdur)
+    # datafilt = mne.filter.filter_data(dataIn, sfreq, l_freq=None, h_freq=f_p, picks=None, filter_length= '%ss' % filtdur,
+    #                        l_trans_bandwidth=transBW)
+
+    return datafilt
+
 
 base_dir = '/Users/bolger/Documents/work/Projects/Project_CeLaVie/Data'
 Data_folder_E1= '/Users/bolger/Documents/work/Projects/Project_CeLaVie/Data/Ecole1'
 Data_folder_E2= '/Users/bolger/Documents/work/Projects/Project_CeLaVie/Data/Ecole2'
 
-skool = 'Ecole1'
-blocknom = 'RS2'
-Sujetnums = ['S18','S19','S20','S21', 'S22']
+skool = 'Ecole2'
+blocknom = 'RS1'
+Sujetnums = ['S42']  #,'S19','S20','S21', 'S22'
 Data_folder_curr = os.path.join(base_dir, skool)
 
 if skool == 'Ecole1':
@@ -63,13 +82,14 @@ for cntr, suj in enumerate(Sujetnums):
         print(f'New sampling rate is {new_srate}Hz')
         RawIn_rs = RawIn_ref[0].copy().resample(sfreq=new_srate)
         RawIn_hpass = RawIn_rs.copy().filter(l_freq=0.1, h_freq=None)   # Highpass the data.
-        RawIn_lpass = RawIn_hpass.copy().filter(l_freq=None, h_freq=40) # Lowpass the data.
+        #RawIn_lpass = RawIn_hpass.copy().filter(l_freq=None, h_freq=40, ) # Lowpass the data.
+        RawIn_lpass = create_filter(40, new_srate, RawIn_hpass)  # Call of filter to apply a FIR filter with steep transition BW.
 
         # Visualize the continuous data to mark bad electrodes.
         RawIn_lpass.plot(block=True, n_channels=40, bad_color='r', butterfly=False)  # Plot the continuous data.
 
         # Save the preprocessed object as .fif.
-        save_nom = blocknom+'_'+suj+'-ref-rs-hp-lp.fif'
+        save_nom = blocknom+'_'+suj+'-ref-rs-hp-lp_v2.fif'
         save_fullfile = os.path.join(Savefolder_curr, save_nom)
         RawIn_lpass.save(save_fullfile, overwrite=True)
 

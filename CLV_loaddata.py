@@ -42,9 +42,9 @@ base_dir = '/Users/bolger/Documents/work/Projects/Project_CeLaVie/Data'
 Data_folder_E1= '/Users/bolger/Documents/work/Projects/Project_CeLaVie/Data/Ecole1'
 Data_folder_E2= '/Users/bolger/Documents/work/Projects/Project_CeLaVie/Data/Ecole2'
 
-skool = 'Ecole2'
-blocknom = 'RS1'
-Sujetnums = ['S42']  #,'S19','S20','S21', 'S22'
+skool = 'Ecole1'
+blocknom = 'Pros'
+Sujetnums = ['S18']
 Data_folder_curr = os.path.join(base_dir, skool)
 
 if skool == 'Ecole1':
@@ -55,6 +55,8 @@ elif skool == 'Ecole2':
 eog_channels = ['EXG1', 'EXG2', 'EXG3', 'EXG4', 'EXG5', 'EXG6', 'EXG7', 'EXG8']
 misc_channels = ['GSR1', 'GSR2', 'Erg1', 'Erg2', 'Resp', 'Plet', 'Temp']
 srate_div = 32  # To have sampling frequency of 128Hz (required for micro-state analysis)
+#%% ***** Set up an MNE Report (HTML file) ***********************
+
 
 for cntr, suj in enumerate(Sujetnums):
 
@@ -65,6 +67,14 @@ for cntr, suj in enumerate(Sujetnums):
         fulldir   = os.path.join(dir_suj, fnom_curr)
         RawIn     = mne.io.read_raw_bdf(fulldir, eog=eog_channels , misc=misc_channels, stim_channel='auto', preload=True)
 
+        # %% ***** Set up an MNE Report (HTML file) ***********************
+        fnom_split = fnom_curr.split('.')
+        report_fname = '.'.join([fnom_split[0], 'html'])
+        report_path = os.path.join('MNE_Reports_html', report_fname)
+        data_report = mne.Report(title=report_fname, subject=fnom_split)
+        data_report.add_raw(raw=RawIn, title="Raw data", psd=False)
+
+
         # Print current data information.
         channoms = RawIn.info['ch_names']
         print(channoms)
@@ -73,8 +83,10 @@ for cntr, suj in enumerate(Sujetnums):
 
         # Apply Montage and plot sensor layout.
         montage = mne.channels.make_standard_montage('biosemi128')
+        montage_fig = mne.viz.plot_montage(montage, show=False)
         RawIn.set_montage(montage)
         RawIn.plot_sensors(show_names=True)
+        data_report.add_figure(fig=montage_fig, title= "Montage biosemi 128 electrodes", caption="Biosemi-128")
 
         # Carry out basic pre-processing steps.
         RawIn_ref = mne.set_eeg_reference(RawIn, ref_channels='average')  # Apply the average reference
@@ -85,8 +97,7 @@ for cntr, suj in enumerate(Sujetnums):
         #RawIn_lpass = RawIn_hpass.copy().filter(l_freq=None, h_freq=40, ) # Lowpass the data.
         RawIn_lpass = create_filter(40, new_srate, RawIn_hpass)  # Call of filter to apply a FIR filter with steep transition BW.
 
-        # Visualize the continuous data to mark bad electrodes.
-        RawIn_lpass.plot(block=True, n_channels=40, bad_color='r', butterfly=False)  # Plot the continuous data.
+        data_report.add_events(events=events_curr, title='Events from "events"', sfreq=new_srate)
 
         # Save the preprocessed object as .fif.
         save_nom = blocknom+'_'+suj+'-ref-rs-hp-lp_v2.fif'
@@ -94,12 +105,17 @@ for cntr, suj in enumerate(Sujetnums):
         RawIn_lpass.save(save_fullfile, overwrite=True)
 
         # Extract the event information from the stim channel.
-        events_curr = mne.find_events(RawIn_lpass, initial_event=True, stim_channel=None)
+        event_annot = {"Trial_start": 1, "Audio_start": 2, "Response": 3, "Trial_end": 4}
+        RawIn_lpass.set_annotations(event_annot)
+        events_curr = mne.find_events(RawIn_lpass, initial_event=True, stim_channel='Status')
+        # Visualize the continuous data to mark bad electrodes.
+        RawIn_lpass.plot(block=True, events=events_curr, duration= 5, n_channels=40, bad_color='r', butterfly=False,
+                         event_id=event_annot)  # Plot the continuous data.
         fsplit = save_nom.split('-')
         if len(events_curr)>1:
 
-            event_fnom = fsplit[0] + '-events.txt'
-            save_events = os.path.join(save_fullfile, event_fnom)
+            event_fnom = fsplit[0] + '-eve.txt'
+            save_events = os.path.join(Savefolder_curr, event_fnom)
             mne.write_events(save_events, events_curr, overwrite=True)
 
         AllPicks = []
@@ -107,6 +123,7 @@ for cntr, suj in enumerate(Sujetnums):
         AllPicks.append(RawInLP_pick)
         RawInLP_pick2 = RawIn_lpass.copy().pick_types(meg=False, eeg=True, stim=False, eog=False, misc=False, exclude='bads')
         AllPicks.append(RawInLP_pick2)
+
 
         fig, axs = plt.subplots(2, 1)
         for scnt, axs_curr in enumerate(axs):
@@ -120,6 +137,8 @@ for cntr, suj in enumerate(Sujetnums):
                 currtitle = fsplit[0] + ' : ' + str(L) + ' channels'
             mne.viz.plot_raw_psd(AllPicks[scnt], fmin=0.1, fmax=60, picks=picks, exclude=[],ax=axs_curr)
             axs_curr.set_title(currtitle)
+        data_report.add_figure(fig=fig, title="Effect of bandpass filter", caption="Spectrum post bandpass filter")
+        data_report.save(os.path.join(Savefolder_curr, report_fname), overwrite=True)
 
 
 

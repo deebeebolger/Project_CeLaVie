@@ -8,8 +8,8 @@ import matplotlib.pyplot as plt
 base_dir = '/Users/bolger/Documents/work/Projects/Project_CeLaVie/Data'
 
 skool = 'Ecole1'
-block = 'RS2'
-Sujetnums = ['S18', 'S19', 'S20', 'S21', 'S22']  #
+block = 'Pros_18'
+Sujetnums = ['S18']  #
 
 if skool == 'Ecole1':
     data_folder = os.path.join(base_dir, 'E1_PreprocData')
@@ -29,6 +29,7 @@ for counter, sujs in enumerate(Sujetnums):
     sfreq = RawIn.info['sfreq']
 
     RawData = RawIn.get_data()  # Get the rawdata array with structure: electrodes X time
+
     PSD, freqs = mne.time_frequency.psd_array_welch(RawData[0:127,:], sfreq, fmin=1, fmax=60, n_fft=2048, n_overlap=0, average='mean')
     AllPSD.append(PSD)
 
@@ -52,7 +53,7 @@ psd_mean = np.mean(allpsd, 0)
 plt.semilogy(freqs, np.transpose(psd_mean))
 plt.xlabel('Frequency (Hz)')
 plt.ylabel('log(power)')
-plt.title('Average of '+ skool + ' '+ block + ' ( 5 participants)')
+plt.title('Average of '+ skool + ' '+ block + ' ( 4 participants)')
 plt.box(1)
 plt.show()
 

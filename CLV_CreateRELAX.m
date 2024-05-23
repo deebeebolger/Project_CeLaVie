@@ -12,11 +12,11 @@ function Relax_cfg = CLV_CreateRELAX()
 
     Relax_cfg.Do_MWF_Once = 1;
     Relax_cfg.Do_MWF_Twice = 1;
-    Relax_cfg.Do_MWF_Trice = 1;
+    Relax_cfg.Do_MWF_Thrice = 1;
     
     Relax_cfg.Perform_wICA_on_ICLabel = 1; 
     Relax_cfg.Perform_ICA_subtract = 1;
-    Relax_cfg.ICA_method = 'fastica_symm';
+    Relax_cfg.ICA_method = 'infomax';
     Relax_cfg.Report_all_ICA_info = 'no';
     
     Relax_cfg.computerawmetrics = 1;                            % Compute blink and muscle metrics from the raw data.
@@ -52,17 +52,18 @@ function Relax_cfg = CLV_CreateRELAX()
     Relax_cfg.HighPassFilter = 0.25;                            % Sets the high pass filter. 1Hz is best for ICA decomposition if you're examining just oscillatory data, 0.25Hz seems to be the highest before ERPs are adversely affected by filtering.
     Relax_cfg.LowPassFilter = 80;
     Relax_cfg.LineNoiseFrequency = 50;
-    Relax_cfg.ElectrodesToDelete = {'GSR1', 'GSR2', 'Erg1', 'Erg2', 'Resp', 'Plet', 'Temp'};
+    Relax_cfg.ElectrodesToDelete = {'GSR1', 'GSR2', 'Erg1', 'Erg2', 'Resp', 'Plet', 'Temp', 'EXG1','EXG2', 'EXG3',...
+        'EXG4', 'EXG5', 'EXG6', 'EXG7', 'EXG8'};
     Relax_cfg.KeepAllInfo = 0;                                  % Setting this value to 1 keeps all the details from the MWF pre-processing and MWF computation. Helpful for debugging if necessary but makes for large file sizes.
     Relax_cfg.saveextremesrejected = 0;                         % Setting this value to 1 tells the script to save the data after only filtering, extreme channels have been rejected and extreme periods have been noted.
     
-    Relax_cfg.saveround1 = 0;
-    Relax_cfg.saveround2 = 0;
-    Relax_cfg.saveround3 = 0;
+    Relax_cfg.saveround1 = 1;
+    Relax_cfg.saveround2 = 1;
+    Relax_cfg.saveround3 = 1;
     Relax_cfg.OnlyIncludeTaskRelatedEpochs = 0; 
 
-    Relax_cfg.MuscleSlopeThreshold = -0.59;                     % Log-frequency log-power slope threshold for muscle artifact. Less stringent = -0.31, Middle Stringency = -0.59 or more stringent = -0.72, more negative thresholds remove more muscle.
-    Relax_cfg.MaxProportionOfDataCanBeMarkedAsMuscle = 0.50;    % Maximum amount of data periods to be marked as muscle artifact for cleaning by the MWF. You want at least a reasonable amount of both clean and artifact templates for effective cleaning.
+    Relax_cfg.MuscleSlopeThreshold = -0.31;                     % Log-frequency log-power slope threshold for muscle artifact. Less stringent = -0.31, Middle Stringency = -0.59 or more stringent = -0.72, more negative thresholds remove more muscle.
+    Relax_cfg.MaxProportionOfDataCanBeMarkedAsMuscle = 0.30;    % Maximum amount of data periods to be marked as muscle artifact for cleaning by the MWF. You want at least a reasonable amount of both clean and artifact templates for effective cleaning.
     Relax_cfg.ProportionOfMuscleContaminatedEpochsAboveWhichToRejectChannel = 0.05;
     Relax_cfg.ProportionOfExtremeNoiseAboveWhichToRejectChannel = 0.05;
     Relax_cfg.MaxProportionOfElectrodesThatCanBeDeleted = 0.20;

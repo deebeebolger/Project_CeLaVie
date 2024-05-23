@@ -137,7 +137,7 @@ for fcounter = 1:RELAX_cfg.FilesToProcess
 
     %% RESAMPLE THE DATA HERE. 
 
-    newFS = 512;
+    newFS = 1024;
     fprintf('Downsampling from %d to %d Hz', EEG.srate, newFS);
     EEG = pop_resample(EEG, newFS);
 
@@ -288,6 +288,7 @@ for fcounter = 1:RELAX_cfg.FilesToProcess
             if ~exist([RELAX_cfg.myPath, filesep 'RELAXProcessed' filesep '1xMWF'], 'dir')
                 mkdir([RELAX_cfg.myPath, filesep 'RELAXProcessed' filesep '1xMWF'])
             end
+            Fname_mwf = [FileName, '_MWF1'];
             SaveSetMWF1 =[RELAX_cfg.myPath, filesep 'RELAXProcessed' filesep '1xMWF', filesep FileName '_MWF1.set'];    
             EEG = pop_saveset( EEG, SaveSetMWF1 ); 
         end
@@ -366,6 +367,7 @@ for fcounter = 1:RELAX_cfg.FilesToProcess
             if ~exist([RELAX_cfg.myPath, filesep 'RELAXProcessed' filesep '2xMWF'], 'dir')
                 mkdir([RELAX_cfg.myPath, filesep 'RELAXProcessed' filesep '2xMWF'])
             end
+            Fname_mwf = [FileName, '_MWF2']
             SaveSetMWF2 =[RELAX_cfg.myPath, filesep 'RELAXProcessed' filesep '2xMWF', filesep FileName '_MWF2.set'];    
             EEG = pop_saveset( EEG, SaveSetMWF2 ); 
         end     
@@ -459,6 +461,7 @@ for fcounter = 1:RELAX_cfg.FilesToProcess
             if ~exist([RELAX_cfg.myPath, filesep 'RELAXProcessed' filesep '3xMWF'], 'dir')
                 mkdir([RELAX_cfg.myPath, filesep 'RELAXProcessed' filesep '3xMWF'])
             end
+            Fname_mwf = [FileName, '_MWF3'];
             SaveSetMWF3 =[RELAX_cfg.myPath,filesep 'RELAXProcessed' filesep '3xMWF', filesep FileName '_MWF3.set'];    
             EEG = pop_saveset( EEG, SaveSetMWF3 ); 
         end
@@ -488,13 +491,10 @@ for fcounter = 1:RELAX_cfg.FilesToProcess
        
         EEG.RELAXProcessing_wICA.aFileName=cellstr(FileName);
 
-        [EEG,~, ~, ~, ~] = RELAX_wICA_on_ICLabel_artifacts(EEG,RELAX_cfg.ICA_method, 1, 0, EEG.srate, 5,'coif5',RELAX_cfg.Report_all_ICA_info); 
-        
-        % adding 'Report_all_wICA_info' to the end of the parameters specified will optionally report proportion of ICs categorized as each category, 
-        % and variance explained by ICs from each category (function is ~20s slower if this is implemented)
+        [EEG, ~, ~, ~, ~] = CLV_runinfomax(EEG, RELAX_cfg, Fname_mwf);
         EEG = eeg_checkset( EEG );
 
-        RELAXProcessing_wICA=EEG.RELAXProcessing_wICA;
+        RELAXProcessing_wICA =EEG.RELAXProcessing_wICA;
         
         % Record processing statistics for all participants in single table:
         RELAXProcessing_wICA_AllParticipants(fcounter,:) = struct2table(RELAXProcessing_wICA,'AsArray',true);

@@ -1,4 +1,4 @@
-%% Test script to implement the RELAX pipeline.
+%% Script to implement the RELAX pipeline.
 %%***************************************************
 % DEPENDENCIES (toolboxes you need to install, and cite if you use this script):
 % use fileseparators 'filesep' for increased compatability if necessary (replace the \ with a filesep [outside of quotes])
@@ -23,33 +23,58 @@
 
 % ICLabel in your eeglab folder as a plugin or via the github:
 % https://github.com/sccn/ICLabel
-function [RELAX_cfg, FileNumber, CleanedMetrics, RawMetrics, RELAXProcessingRoundOneAllParticipants,...
-    RELAXProcessingRoundTwoAllParticipants, RELAXProcessing_wICA_AllParticipants,...
-    RELAXProcessing_ICA_AllParticipants, RELAXProcessingRoundThreeAllParticipants,...
-    RELAX_issues_to_check, RELAXProcessingExtremeRejectionsAllParticipants] = CLV_RunRELAX()
+
+% Utilisation: CLV_RunRELAX(testType)
+% testType = 'Posttest' or 'Pretest'
+
+% Programmed by: D. Bolger 
+% Date: May 2024
+
+function CLV_RunRELAX(testType)
 
 %% Check dependencies are installed.
+%  The paths will change from one user to another.
+
+fprintf('==================================================================\n')
+fprintf('Adding dependencies to matlab path.\n');
+fprintf('==================================================================\n')
 
 PrepFolderLocation = '/Users/bolger/Documents/MATLAB/PrepPipeline/';
 addpath(genpath(PrepFolderLocation), '-end'); % Use genpath to add with subfolders.
 
+MWFFolderLocation = '/Users/bolger/Documents/MATLAB/mwf-artifact-removal-master';
+addpath(genpath(MWFFolderLocation), '-end');
+
 %% Call of function to create the RELAX configuration structure.
 
-RELAX_cfg = CLV_CreateRELAX();
+fprintf('==================================================================\n')
+fprintf('Create RELAX config *.mat file\n');
+fprintf('==================================================================\n')
+
+RELAX_cfg = CLV_CreateRELAX(testType);
 
 %% Check that the folder to accept the processed data has been exists, if not, create it.
 %  The mkdir function appears not to function on m3 mac.
 
+
+fprintf('==================================================================\n');
+fprintf('Create folder for processed if it does not exist.\n');
+fprintf('==================================================================\n');
+
 if ~exist(RELAX_cfg.OutputPath, 'dir')
     fprintf("Creating folder entitled: RELAXProcessed...\n")
-    [status, msg] = mkdir(RELAX_cfg.OutputPath);
+    [~,~] = mkdir(RELAX_cfg.OutputPath);
 else
     fprintf("The folder RELAXProcessed already exists. No need to create a directory. \n")
 end
 
-%% Call of function to carry out different processing steps, based on RELAX_Wrapper().
+%% SELECT THE RAW FILES TO BE LOADED.
 %  Find the number and type of files in the rawdata folder
 %  (RELAX_cfg.myPathRaw)
+
+fprintf('==================================================================\n');
+fprintf('Select raw files in *.bdf or *.set format\n');
+fprintf('==================================================================\n');
 
 [filename, filepath] = uigetfile({'*.bdf; *.set' 'BDF or eeglab set file';'*.bdf' 'BDF'; '*.set' 'eeglab set file'},...
     'Choose a BDF or .set data file ', 'multiselect', 'on');
@@ -66,6 +91,25 @@ else
     RELAX_cfg.FilesToProcess = numel(string(filename)); % Number of datasets to process.
 end
 
+%% Save the RELAX_cfg *.mat file as a json file in the directory 1 above directory eeg.
+
+fprintf('==================================================================\n');
+fprintf('Save RELAX config file as *.json file\n');
+fprintf('==================================================================\n');
+
+[parentpart, childpart, ~] = fileparts(filepath);
+if isempty(childpart)
+    [parentpart, ~, ~] = fileparts(fileparts(filepath));
+end
+
+% Save the Relax configuration *.mat file as a json file.
+
+json_params = jsonencode(RELAX_cfg, PrettyPrint=true);
+json_title = 'Relax_cfg.json';
+fid = fopen(fullfile(parentpart, json_title), 'w');
+fprintf(fid, '%s', json_params);
+fclose(fid);
+
 %% Loop through the selected datasets to carry out preprocessing.
 
 for fcounter = 1:RELAX_cfg.FilesToProcess
@@ -75,6 +119,9 @@ for fcounter = 1:RELAX_cfg.FilesToProcess
 
     %% Load in the dataset corresponding to the current filename. It is
     % possible to load in either *.bdf or .set format.
+    fprintf('==================================================================\n');
+    fprintf('Load in the raw data in either *.bdf or *.set format.\n');
+    fprintf('==================================================================\n');
 
     if strcmp(ext, '.set')
         EEG = pop_load(filename{1, fcounter}, filepath);
@@ -83,6 +130,11 @@ for fcounter = 1:RELAX_cfg.FilesToProcess
     end
 
     %% Add RELAX processing information to current EEG structure.
+
+    fprintf('==================================================================\n');
+    fprintf('Add the RELAX processing info to the EEG structure.\n');
+    fprintf('Add the raw dataset in *.set format.\n');
+    fprintf('==================================================================\n');
 
     EEG.RELAXProcessing.aFileName=cellstr(FileName);
     EEG.RELAXProcessingExtremeRejections.aFileName=cellstr(FileName);
@@ -101,6 +153,11 @@ for fcounter = 1:RELAX_cfg.FilesToProcess
     end
 
     %% Add the channel locations to the EEG.chanlocs field of the current dataset.
+
+     fprintf('==================================================================\n');
+     fprintf('Add channel information to current dataset.\n');
+     fprintf('Plot the channel layout.\n');
+     fprintf('==================================================================\n');
 
     load(RELAX_cfg.caploc,"chanLocations128")
     for locnt = 1:length(chanLocations128)
@@ -122,6 +179,9 @@ for fcounter = 1:RELAX_cfg.FilesToProcess
 
     %% Delete those channels marked for deletion or considered irrelevant for the current study.
     %  Should we delete the auxiliary channels (channels 137 tp 143).
+    fprintf('==================================================================\n');
+    fprintf('Exclude electrodes marked for rejection in config file.\n');
+    fprintf('==================================================================\n');
 
     if ~isempty(RELAX_cfg.ElectrodesToDelete)
         EEG=pop_select(EEG,'nochannel',RELAX_cfg.ElectrodesToDelete);
@@ -136,6 +196,9 @@ for fcounter = 1:RELAX_cfg.FilesToProcess
     EEG = pop_saveset(EEG, 'filename', FileName_nochan, 'filepath', RELAX_cfg.OutputPath);
 
     %% RESAMPLE THE DATA HERE. 
+    fprintf('==================================================================\n');
+    fprintf('Downsample the data.\n');
+    fprintf('==================================================================\n');
 
     newFS = 1024;
     fprintf('Downsampling from %d to %d Hz', EEG.srate, newFS);
@@ -151,15 +214,37 @@ for fcounter = 1:RELAX_cfg.FilesToProcess
     %  1. A notch filter is applied to reduce line noise (47-53Hz).
     %  2  A bandpass filter is applied.
 
+    fprintf('==================================================================\n');
+    fprintf('Apply notch filter.\n');
+    fprintf('Bandpass filter (4th order Butterworth) : %d - %dHz.\n', RELAX_cfg.HighPassFilter,...
+        RELAX_cfg.LowPassFilter);
+    fprintf('==================================================================\n');
+
     EEG = RELAX_filtbutter(EEG, RELAX_cfg.LineNoiseFrequency-3, RELAX_cfg.LineNoiseFrequency+3, 4, 'bandstop' );
     EEG = RELAX_filtbutter( EEG, RELAX_cfg.HighPassFilter, RELAX_cfg.LowPassFilter, 4, 'bandpass' );
 
     FileName_filt = [FileName_nochan, '-filt'];
     EEG = pop_saveset(EEG, 'filename', FileName_filt, 'filepath', RELAX_cfg.OutputPath);
 
+    %% Plot the frequency spectrum of the scalp channels. 
+    
+    fprintf('==================================================================\n');
+    fprintf('Plot the frequency spectrum of scalp electrodes.\n');
+    fprintf('==================================================================\n');
+    
+    
+    scalpNum = length(EEG.allchan);
+    [frefs, pows, BadChans] = showSpectrum(EEG, string({EEG.chanlocs(1:scalpNum).labels}), 1:scalpNum, 1:scalpNum,...
+    [EEG.setname,': Bandpass filtered', '(', num2str(RELAX_cfg.HighPassFilter), 'Hz - ', num2str(RELAX_cfg.LowPassFilter),'Hz)'],...
+    scalpNum/2);
+
     %% Apply PREP pipeline functions to detect noisy electrodes.
     %  This deals mainly with flat channels and channels with "improbable"
     %  data.
+
+    fprintf('==========================================================================\n');
+    fprintf('Detect noisy electrodes (PREP pipeline function - findNoisyChannels().\n');
+    fprintf('==========================================================================\n');
 
     noisyOut = findNoisyChannels(EEG);
 
@@ -173,6 +258,11 @@ for fcounter = 1:RELAX_cfg.FilesToProcess
     %% Epoch data, detect extremely bad data, delete channels if over the set threshold for proportion of data affected by extreme outlier for each electrode
     %  Epoch data also to detect time periods of noisy data to exclude from MWF cleaning and to delete before wICA cleaning.
 
+    fprintf('===========================================================================================\n');
+    fprintf(' Detection of noisy channels via creation of 1second data epochs (500ms overlap.\n');
+    fprintf(' Detection of noisy time intervals via creation of 1second data epochs (500ms overlap).\n')
+    fprintf('===========================================================================================\n');
+
     continuousEEG=EEG;
     [continuousEEG, epochedEEG] = RELAX_excluding_channels_and_epoching(continuousEEG, RELAX_cfg);
     [continuousEEG, epochedEEG] = RELAX_excluding_extreme_values(continuousEEG, epochedEEG, RELAX_cfg);
@@ -182,6 +272,10 @@ for fcounter = 1:RELAX_cfg.FilesToProcess
     %  The output is continuous data that includes all previous extreme-period markings from the epoched data.
     %  Remember to have the correct electrodes defined for blink-detection in the RELAX_cfg structure.
     %  Need to exclude the exogenous electrodes from this as they do not have any channel location information.
+
+    fprintf('==================================================================\n');
+    fprintf('Eye-blink detection via IQR approach.\n');
+    fprintf('==================================================================\n');
 
     if RELAX_cfg.ProbabilityDataHasNoBlinks<2
         [continuousEEG, epochedEEG] = RELAX_blinks_IQR_method(continuousEEG, epochedEEG, RELAX_cfg); % Use an IQR threshold method to detect and mark blinks
@@ -196,10 +290,17 @@ for fcounter = 1:RELAX_cfg.FilesToProcess
 
     %% Record extreme artifact rejection details for all participants in single table.
 
+    fprintf('==================================================================\n');
+    fprintf('Record artifact rejection details in table.\n');
+    fprintf('==================================================================\n');
+
     RELAXProcessingExtremeRejectionsAllParticipants(fcounter,:) = struct2table(epochedEEG.RELAXProcessingExtremeRejections,'AsArray',true);
     rawEEG=continuousEEG;          % Take a copy of the not yet cleaned data for calculation of all cleaning SER and ARR at the end
 
     %% Mark artifacts for calculating SER and ARR, regardless of whether MWF is performed (RELAX v1.1.3 update).
+    fprintf('==============================================================\n');
+    fprintf('Mark artifacts for calculating SER and ARR.\n');
+    fprintf('==============================================================\n');
 
     if RELAX_cfg.computecleanedmetrics==1 && (RELAX_cfg.Do_MWF_Once==0 || RELAX_cfg.Do_MWF_Twice==0 || RELAX_cfg.Do_MWF_Thrice==0)
 
@@ -233,6 +334,11 @@ for fcounter = 1:RELAX_cfg.FilesToProcess
 
         %% Use epoched data and FFT to detect slope of log frequency log power, add periods exceeding muscle threshold to mask.
         
+        fprintf('==================================================================\n');
+        fprintf('Multi Wiener Filtering : 1st pass...\n');
+        fprintf('\tDetect and clean muscle artifacts.\n');
+        fprintf('==================================================================\n');
+
         [continuousEEG, epochedEEG] = RELAX_muscle(continuousEEG, epochedEEG, RELAX_cfg);  
         if RELAX_cfg.computerawmetrics==1
             [continuousEEG, epochedEEG] = RELAX_metrics_muscle(continuousEEG, epochedEEG, RELAX_cfg); % record muscle contamination metrics from raw data for comparison.
@@ -241,8 +347,15 @@ for fcounter = 1:RELAX_cfg.FilesToProcess
         EEG=continuousEEG; % Return continuousEEG to the "EEG" variable for MWF processing
 
         %% If including eye blink cleaning in first round MWF, then insert eye blink mask into noise mask.
-        
+     
+            
         if RELAX_cfg.MWFRoundToCleanBlinks==1
+
+            fprintf('==================================================================\n');
+            fprintf('MWF 1:\n');
+            fprintf('\tDetecting eye-blinks.\n');
+            fprintf('\tIntegrate eye-blink mask into the noise mask.\n');
+            fprintf('==================================================================\n');
 
             EEG.RELAXProcessing.Details.NoiseMaskFullLength(EEG.RELAX.eyeblinkmask==1)=1;
             EEG.RELAX.eyeblinkmask(isnan(EEG.RELAXProcessing.Details.NaNsForNonEvents))= NaN;
@@ -256,6 +369,10 @@ for fcounter = 1:RELAX_cfg.FilesToProcess
         % and excludes extreme artifacts from the cleaning template (so the MWF cleaning step just ignores extreme
         % artifacts in it's template - doesn't include them in either the clean or artifact mask, but does apply cleaning to them).
         
+        fprintf('==================================================================\n');
+        fprintf('MWF 1: Pad very brief intervals in the noise mask.\n');
+        fprintf('==================================================================\n');
+        
         [EEG] = RELAX_pad_brief_mask_periods (EEG, RELAX_cfg, 'notblinks'); % If period has been marked as shorter than RELAX_cfg.MinimumArtifactDuration, then pad it out.
         
         EEG.RELAX.NoiseMaskFullLengthR1=EEG.RELAXProcessing.Details.NoiseMaskFullLength;
@@ -263,6 +380,10 @@ for fcounter = 1:RELAX_cfg.FilesToProcess
         EEG.RELAX.ProportionMarkedInMWFArtifactMaskTotalR1=EEG.RELAXProcessing.ProportionMarkedInMWFArtifactMaskTotal; 
 
         %% RUN MWF TO CLEAN DATA BASED ON MASKS CREATED ABOVE:
+
+        fprintf('==================================================================\n');
+        fprintf('MWF 1: Run MWF based on the created noise mask.\n');
+        fprintf('==================================================================\n');
         
         [EEG] = RELAX_perform_MWF_cleaning(EEG, RELAX_cfg);          
 
@@ -279,6 +400,9 @@ for fcounter = 1:RELAX_cfg.FilesToProcess
         end
         
         %% Record processing statistics for all participants in single table:
+        fprintf('==================================================================\n');
+        fprintf('MWF 1: Record processing stats for 1st MWF.\n');
+        fprintf('==================================================================\n');
         
         RELAXProcessingRoundOneAllParticipants(fcounter,:) = struct2table(RELAXProcessingRoundOne,'AsArray',true);
         EEG = rmfield(EEG,'RELAXProcessing');
@@ -286,7 +410,7 @@ for fcounter = 1:RELAX_cfg.FilesToProcess
         % Save round 1 MWF pre-processing:
         if RELAX_cfg.saveround1==1
             if ~exist([RELAX_cfg.myPath, filesep 'RELAXProcessed' filesep '1xMWF'], 'dir')
-                mkdir([RELAX_cfg.myPath, filesep 'RELAXProcessed' filesep '1xMWF'])
+                mkdir([RELAX_cfg.myPath, filesep 'RELAXProcessed' filesep '1xMWF']);
             end
             Fname_mwf = [FileName, '_MWF1'];
             SaveSetMWF1 =[RELAX_cfg.myPath, filesep 'RELAXProcessed' filesep '1xMWF', filesep FileName '_MWF1.set'];    
@@ -306,12 +430,19 @@ for fcounter = 1:RELAX_cfg.FilesToProcess
      
      if RELAX_cfg.Do_MWF_Twice==1
 
+        fprintf('==================================================================\n');
+        fprintf('Multi Wiener Filtering : 2nd pass...\n');
+        fprintf('==================================================================\n');
+         
         EEG.RELAXProcessing.aFileName=cellstr(FileName);
         EEG.RELAXProcessing.ProportionMarkedBlinks=0;
         
         %% If blinks weren't initially detected because they were  disguised by the the muscle artifact, detect them here (this happens in <1/200 cases, but is a good back up).
-        
-        if RELAX_cfg.ProbabilityDataHasNoBlinks==0
+        fprintf('==============================================================================\n');
+        fprintf('MWF 2: Detect eye-blinks not detected by 1st MWF because masked by muscle artifacts.\n');
+        fprintf('==============================================================================\n');
+
+        if RELAX_cfg.ProbabilityDataHasNoBlinks==0  % If the probability that the dataset does not have blinks is 0.
             if EEG.RELAX.IQRmethodDetectedBlinks(1,1)==0
                 continuousEEG=EEG;
                 [continuousEEG, epochedEEG] = RELAX_blinks_IQR_method(continuousEEG, epochedEEG, RELAX_cfg);
@@ -321,6 +452,12 @@ for fcounter = 1:RELAX_cfg.FilesToProcess
 
         %% If including eye blink cleaning in second round MWF, then insert eye blink mask into noise mask:
         
+        fprintf('==================================================================\n');
+        fprintf('MWF 2:\n')
+        fprintf('\tDetecting eye-blinks.\n');
+        fprintf('\tIntegrate eye-blink mask into the noise mask.\n');
+        fprintf('==================================================================\n');
+
         if isfield(EEG.RELAX, 'eyeblinkmask')
             if RELAX_cfg.MWFRoundToCleanBlinks==2
                 fprintf('Cleaning eye-blinks in this second round of MWF.\n');
@@ -334,6 +471,10 @@ for fcounter = 1:RELAX_cfg.FilesToProcess
         %  and excludes extreme artifacts from the cleaning template (so the MWF cleaning step just ignores extreme artifacts in it's template - 
         %  doesn't include them in either the clean or artifact mask, but does apply cleaning to them).
         
+        fprintf('==================================================================\n');
+        fprintf('MWF 2: Pad very brief intervals in the noise mask.\n');
+        fprintf('==================================================================\n');
+
         [EEG] = RELAX_pad_brief_mask_periods(EEG, RELAX_cfg, 'blinks');
         
         EEG.RELAX.NoiseMaskFullLengthR2=EEG.RELAXProcessing.Details.NoiseMaskFullLength;
@@ -341,6 +482,10 @@ for fcounter = 1:RELAX_cfg.FilesToProcess
         EEG.RELAX.ProportionMarkedInMWFArtifactMaskTotalR2=EEG.RELAXProcessing.ProportionMarkedInMWFArtifactMaskTotal; 
 
         %% RUN MWF TO CLEAN DATA BASED ON MASKS CREATED ABOVE:
+
+        fprintf('==================================================================\n');
+        fprintf('MWF 2: Run MWF based on the created noise mask.\n');
+        fprintf('==================================================================\n');
         
         [EEG] = RELAX_perform_MWF_cleaning(EEG, RELAX_cfg);           
  
@@ -359,6 +504,10 @@ for fcounter = 1:RELAX_cfg.FilesToProcess
 
         %% Record processing statistics for all participants in single table:
         
+        fprintf('==================================================================\n');
+        fprintf('MWF 2: Record processing stats for 2nd MWF.\n');
+        fprintf('==================================================================\n');
+
         RELAXProcessingRoundTwoAllParticipants(fcounter,:) = struct2table(RELAXProcessingRoundTwo,'AsArray',true);
         EEG = rmfield(EEG,'RELAXProcessing');
         
@@ -367,7 +516,7 @@ for fcounter = 1:RELAX_cfg.FilesToProcess
             if ~exist([RELAX_cfg.myPath, filesep 'RELAXProcessed' filesep '2xMWF'], 'dir')
                 mkdir([RELAX_cfg.myPath, filesep 'RELAXProcessed' filesep '2xMWF'])
             end
-            Fname_mwf = [FileName, '_MWF2']
+            Fname_mwf = [FileName, '_MWF2'];
             SaveSetMWF2 =[RELAX_cfg.myPath, filesep 'RELAXProcessed' filesep '2xMWF', filesep FileName '_MWF2.set'];    
             EEG = pop_saveset( EEG, SaveSetMWF2 ); 
         end     
@@ -377,6 +526,10 @@ for fcounter = 1:RELAX_cfg.FilesToProcess
      %% PERFORM A THIRD ROUND OF MWF. 
 
      if RELAX_cfg.Do_MWF_Thrice == 1
+        
+        fprintf('==================================================================\n');
+        fprintf('Multi Wiener Filtering : 3rd pass...\n');
+        fprintf('==================================================================\n');
 
         EEG.RELAXProcessing.aFileName=cellstr(FileName);
         EEG.RELAXProcessing.ProportionMarkedBlinks=0;
@@ -395,18 +548,27 @@ for fcounter = 1:RELAX_cfg.FilesToProcess
         %% Epoch the data into 1 second epochs with a 500ms overlap. 
         %  Outputs both the ContinuousEEG (which has been filtered above by this point) and the epoched data as EEG.
         
+        fprintf('======================================================================\n');
+        fprintf('MWF 3:\n')
+        fprintf('\tSegment data into 1second epochs with 500ms overlap.\n');
+        fprintf('\tDetect artifacts related to drift.\n');
+        fprintf('=======================================================================\n');
+        
         [continuousEEG, epochedEEG] = RELAX_epoching(EEG, RELAX_cfg);
 
         %% THIS SECTION CONTAINS FUNCTIONS WHICH MARK ARTIFACTS
 
         [continuousEEG, epochedEEG] = RELAX_drift(continuousEEG, epochedEEG, RELAX_cfg); % Use epoched data to add periods showing excessive drift to the mask
         
-        % Use the filtered continuous data to detect horizontal eye movements and mark these in the EEG.event as well as in the mask.
+        %% Use the filtered continuous data to detect horizontal eye movements and mark these in the EEG.event as well as in the mask.
         % You may want to simply reject horizontal eye movements at a later stage if your task requires participants to look straight ahead
         % for the entire task. 
         % Alternatively, if your task requires participants to complete horizontal eye movements time locked to
         % a stimuli, this section will mark every event with these horizontal eye movements as an artifact, and should not be implemented.
-        
+        fprintf('=======================================================================================\n');
+        fprintf('MWF 3: Detect artifacts related to horizontal eye-blinks (hEOGs) on continuous data.\n');
+        fprintf('=======================================================================================\n');
+
         % The output is continuous data:
         [continuousEEG] = RELAX_horizontaleye(continuousEEG, RELAX_cfg);
 
@@ -416,6 +578,11 @@ for fcounter = 1:RELAX_cfg.FilesToProcess
         
         % If including eye blink cleaning in third round MWF, then insert eye blink mask into noise mask:
         if RELAX_cfg.MWFRoundToCleanBlinks==3
+            
+            fprintf('================================================================================\n');
+            fprintf('MWF 3: Eye-blinks detected in 3rd MWF, add to noise mask.\n');
+            fprintf('================================================================================\n');
+
             EEG.RELAXProcessing.Details.NoiseMaskFullLength(EEG.RELAX.eyeblinkmask==1)=1;
             EEG.RELAX.eyeblinkmask(isnan(EEG.RELAXProcessing.Details.NaNsForNonEvents))=NaN;
             EEG.RELAXProcessing.ProportionMarkedBlinks=mean(EEG.RELAX.eyeblinkmask,'omitnan');
@@ -426,6 +593,10 @@ for fcounter = 1:RELAX_cfg.FilesToProcess
         % cleaning template (so the MWF cleaning step just ignores extreme artifacts in it's template - doesn't include them in either the
         % clean or artifact mask, but does apply cleaning to them).
         
+        fprintf('==================================================================\n');
+        fprintf('MWF 3: Pad very brief intervals in the noise mask.\n');
+        fprintf('==================================================================\n');
+
         [EEG] = RELAX_pad_brief_mask_periods (EEG, RELAX_cfg, 'notblinks');
         
         EEG.RELAX.NoiseMaskFullLengthR3=EEG.RELAXProcessing.Details.NoiseMaskFullLength;
@@ -434,6 +605,10 @@ for fcounter = 1:RELAX_cfg.FilesToProcess
 
         %% RUN MWF TO CLEAN DATA BASED ON MASKS CREATED ABOVE:
         
+        fprintf('==================================================================\n');
+        fprintf('MWF 3: Clean data based on noise mask created.\n');
+        fprintf('==================================================================\n');
+
         [EEG] = RELAX_perform_MWF_cleaning (EEG, RELAX_cfg);               
         
         if isfield(EEG.RELAX, 'eyeblinkmask')            % if eyeblinkmask has been created, do the following.
@@ -454,6 +629,10 @@ for fcounter = 1:RELAX_cfg.FilesToProcess
 
         %% Record processing statistics for all participants in single table:
         
+        fprintf('==================================================================\n');
+        fprintf('MWF 3: Record processing stats for 3rd MWF.\n');
+        fprintf('==================================================================\n');
+
         RELAXProcessingRoundThreeAllParticipants(fcounter,:) = struct2table(RELAXProcessingRoundThree,'AsArray',true);
         EEG = rmfield(EEG,'RELAXProcessing');
 
@@ -469,6 +648,10 @@ for fcounter = 1:RELAX_cfg.FilesToProcess
      end % End of Do MWF Thrice if condition.
 
      %% Perform robust average re-referencing of the data and reject periods marked as extreme outliers.
+    
+    fprintf('==================================================================\n');
+    fprintf('Perform robust average re-referencing.\n');
+    fprintf('==================================================================\n');
 
      if RELAX_cfg.Do_MWF_Once==0
         EEG=continuousEEG;
@@ -478,8 +661,12 @@ for fcounter = 1:RELAX_cfg.FilesToProcess
 
 
     %% Reject periods that were marked as NaNs in the MWF masks because they showed extreme shift within the epoch or extremely improbable data.
+    
+    fprintf('==================================================================\n');
+    fprintf('Reject dta periods marked as NaN in noise masks.\n');
+    fprintf('==================================================================\n');
 
-    EEG = eeg_eegrej(EEG, EEG.RELAX.ExtremelyBadPeriodsForDeletion); % Takes everything out for subject 18!!
+    EEG = eeg_eegrej(EEG, EEG.RELAX.ExtremelyBadPeriodsForDeletion); 
 
     %% Perform wICA on ICLabel identified artifacts that remain.
     %  The following performs wICA, implemented on only the components marked as artifact by ICLabel.
@@ -487,37 +674,31 @@ for fcounter = 1:RELAX_cfg.FilesToProcess
     % fastica performs quickly on continuous data and doesn't seem to be inferior at cleaning compared to AMICA (which is much slower). 
     % It also seems to be comparable (or only slightly worse) than extended infomax (run via cudaICA for speed).
     
+    fprintf('============================================================================\n');
+    fprintf('Perform Independ Components Analysis (ICA): the infomax algorithm.\n')
+    fprintf('Perform wavelet-enhanced ICA on artifact-related ICs detected by ICLabel.\n');
+    fprintf('============================================================================\n');
+
     if RELAX_cfg.Perform_wICA_on_ICLabel==1
        
         EEG.RELAXProcessing_wICA.aFileName=cellstr(FileName);
 
         [EEG, ~, ~, ~, ~] = CLV_runinfomax(EEG, RELAX_cfg, Fname_mwf);
         EEG = eeg_checkset( EEG );
-
-        RELAXProcessing_wICA =EEG.RELAXProcessing_wICA;
         
         % Record processing statistics for all participants in single table:
+        RELAXProcessing_wICA = EEG.RELAXProcessing_wICA;
         RELAXProcessing_wICA_AllParticipants(fcounter,:) = struct2table(RELAXProcessing_wICA,'AsArray',true);
+
     end
 
-    %% Perform ICA subtract on ICLabel identified artifacts that remain:
-    %  The following performs ICA sutraction, implemented on only the components marked as artifact by ICLabel.
-    
-    if RELAX_cfg.Perform_ICA_subtract==1
-    
-        EEG.RELAXProcessing_ICA.aFileName=cellstr(FileName);
-        EEG = RELAX_ICA_subtract(EEG,RELAX_cfg);
-        EEG = eeg_checkset( EEG );
-
-        RELAXProcessing_ICA=EEG.RELAXProcessing_ICA;
-        
-        % Record processing statistics for all participants in single table:
-        RELAXProcessing_ICA_AllParticipants(fcounter,:) = struct2table(RELAXProcessing_ICA,'AsArray',true);
-    end
-    
     EEG.RELAX.Data_has_been_cleaned=1;
-
+    
     %% COMPUTE CLEANED METRICS.
+
+    fprintf('========================================================================\n');
+    fprintf('Compute cleaned metrics.\n');
+    fprintf('========================================================================\n');
 
     if RELAX_cfg.computecleanedmetrics==1    
         [continuousEEG, epochedEEG] = RELAX_epoching(EEG, RELAX_cfg);
@@ -558,6 +739,10 @@ for fcounter = 1:RELAX_cfg.FilesToProcess
     end
 
     %% Record warnings about potential issues:
+
+    fprintf('========================================================================\n');
+    fprintf('Record warnings about potential issues in RELAX config *.mat file.\n');
+    fprintf('========================================================================\n');
     
     EEG.RELAX_issues_to_check.aFileName=cellstr(FileName);
     if size(EEG.RELAXProcessingExtremeRejections.PREPBasedChannelToReject,1)>RELAX_cfg.MaxProportionOfElectrodesThatCanBeDeleted*size(EEG.allchan,2)
@@ -612,17 +797,24 @@ for fcounter = 1:RELAX_cfg.FilesToProcess
         EEG.RELAX_issues_to_check.fastica_symm_Didnt_Converge=EEG.RELAXProcessing_ICA.fastica_symm_Didnt_Converge(1,3);
     end
     
-    %% If defined, interpolate the rejected electrodes after cleaning.
+    %% If defined, interpolate the rejected electrodes after cleaning using spherical spline interpolation.
+    
+    fprintf('=========================================================================\n');
+    fprintf('Interpolate rejected electrodes using Spherical Spline Interpolation.\n');
+    fprintf('Save interpolated dataset as *.set file.\n');
+    fprintf('=========================================================================\n');
 
     if strcmp(RELAX_cfg.InterpolateRejectedElectrodesAfterCleaning,'yes')
         EEG = pop_interp(EEG, EEG.allchan, 'spherical');
     end
 
+    %% Save the interpolated dataset as a *.set file.
 
-
+    fname_interp   = [EEG.setname, '-ssinterp'];
+    Outeeg.setname = fname_interp;
+    saveeeg_interp = fullfile(RELAX_cfg.OutputPath,fname_interp);
+    Outeeg = pop_saveset(EEG, saveeeg_interp); 
+    
  end
 
-
-
-
-end
+end % End of main calling function.

@@ -1,11 +1,11 @@
 %% Function to create the RELAX configuration structure.
 
-function Relax_cfg = CLV_CreateRELAX()
+function Relax_cfg = CLV_CreateRELAX(testtype)
 
     Relax_cfg = [];  % Initialise the RELAX configuration structure.
     Relax_cfg.caploc = fullfile(filesep,'Users','bolger','Matlab','Projects','CeLaVie_EEG','Data_Processing','ChanLocs128.mat');
-    Relax_cfg.myPath = fullfile(filesep,'Users','bolger','Matlab','Projects','CeLaVie_EEG','Data_RestingState'); % Path to the data to be processed.
-    Relax_cfg.myPathRaw = fullfile(Relax_cfg.myPath, 'RELAXRaw');                           % Path to raw data folder. All datasets here will be processed.
+    Relax_cfg.myPath = fullfile(filesep,'Users','bolger','Matlab','Projects','CeLaVie_EEG','Data'); % Path to the data to be processed.
+    Relax_cfg.myPathRaw = fullfile(Relax_cfg.myPath, testtype);                           % Path to raw data folder. All datasets here will be processed.
     Relax_cfg.OutputPath = fullfile(Relax_cfg.myPath, 'RELAXProcessed');                                % Path to folder in which processed datasets are saved. This may need to be created.
     
     %% Set the initial extreme outlier cleaning parameters.
@@ -70,5 +70,6 @@ function Relax_cfg = CLV_CreateRELAX()
     Relax_cfg.InterpolateRejectedElectrodesAfterCleaning = 'no';
     Relax_cfg.MWFDelayPeriod = 8;                               % The MWF includes both spatial and temporal information when filtering out artifacts. Longer delays apparently improve performance. 
     
+   
 
 end 

@@ -30,7 +30,17 @@
 % Programmed by: D. Bolger 
 % Date: May 2024
 
-function CLV_RunRELAX(testType)
+% Notes:
+% ProcessingStatisticsRound1.mat
+% ProcessingStatisticsRound2.mat
+% ProcessingStatisticsRound3.mat
+% RawMetrics.mat
+% CleanedMetrics.mat
+% ProcessingStatisticas_wICA.mat
+% RELAXProcessingExtremeRejections_allParticipants.mat
+% RELAX_issues_to_check.mat
+
+function CLV_RunRELAX(testtype)
 
 %% Check dependencies are installed.
 %  The paths will change from one user to another.
@@ -51,7 +61,7 @@ fprintf('==================================================================\n')
 fprintf('Create RELAX config *.mat file\n');
 fprintf('==================================================================\n')
 
-RELAX_cfg = CLV_CreateRELAX(testType);
+RELAX_cfg = CLV_CreateRELAX(testtype);
 
 %% Check that the folder to accept the processed data has been exists, if not, create it.
 %  The mkdir function appears not to function on m3 mac.
@@ -70,7 +80,7 @@ end
 
 %% SELECT THE RAW FILES TO BE LOADED.
 %  Find the number and type of files in the rawdata folder
-%  (RELAX_cfg.myPathRaw)
+%  (RELAX_cfg.myPathRaw)tes
 
 fprintf('==================================================================\n');
 fprintf('Select raw files in *.bdf or *.set format\n');
@@ -126,7 +136,7 @@ for fcounter = 1:RELAX_cfg.FilesToProcess
     if strcmp(ext, '.set')
         EEG = pop_load(filename{1, fcounter}, filepath);
     elseif strcmp(ext, '.bdf')
-        [EEG, ~,~] = pop_biosig(fullfile(filepath,filename{1,fcounter}));
+        [EEG, ~,~] = pop_biosig(fullfile(filepath,filename{1,fcounter}), 'ref', 1);
     end
 
     %% Add RELAX processing information to current EEG structure.
@@ -146,6 +156,15 @@ for fcounter = 1:RELAX_cfg.FilesToProcess
 
     savefileone=[RELAX_cfg.myPath filesep 'RELAXProcessed' filesep 'RELAX_cfg'];
     save(savefileone,'RELAX_cfg');
+
+     %% RESAMPLE THE DATA HERE. 
+    fprintf('==================================================================\n');
+    fprintf('Downsample the data.\n');
+    fprintf('==================================================================\n');
+
+    newFS = RELAX_cfg.sample_rate;
+    fprintf('Downsampling from %d to %d Hz', EEG.srate, newFS);
+    EEG = pop_resample(EEG, newFS);
 
     if RELAX_cfg.ms_per_sample<0.7
         warning('The sampling rate for this file is quite high. Depending on your processing power, RELAX may run slowly or even stall. RELAX was validated using 1000Hz sampling rates.');
@@ -195,14 +214,7 @@ for fcounter = 1:RELAX_cfg.FilesToProcess
     FileName_nochan = [FileName, '-nochan'];
     EEG = pop_saveset(EEG, 'filename', FileName_nochan, 'filepath', RELAX_cfg.OutputPath);
 
-    %% RESAMPLE THE DATA HERE. 
-    fprintf('==================================================================\n');
-    fprintf('Downsample the data.\n');
-    fprintf('==================================================================\n');
 
-    newFS = 1024;
-    fprintf('Downsampling from %d to %d Hz', EEG.srate, newFS);
-    EEG = pop_resample(EEG, newFS);
 
     %% Band Pass filter the continuous data
     %  Need to verify the high-pass and low-pass filter limits applied when
@@ -300,6 +312,8 @@ for fcounter = 1:RELAX_cfg.FilesToProcess
     %% Mark artifacts for calculating SER and ARR, regardless of whether MWF is performed (RELAX v1.1.3 update).
     fprintf('==============================================================\n');
     fprintf('Mark artifacts for calculating SER and ARR.\n');
+    fprintf('\t SER: Signal-error ratio.\n')
+    fprintf('\t ARR: Artifact-to-residue ratio.\n')
     fprintf('==============================================================\n');
 
     if RELAX_cfg.computecleanedmetrics==1 && (RELAX_cfg.Do_MWF_Once==0 || RELAX_cfg.Do_MWF_Twice==0 || RELAX_cfg.Do_MWF_Thrice==0)
@@ -339,7 +353,7 @@ for fcounter = 1:RELAX_cfg.FilesToProcess
         fprintf('\tDetect and clean muscle artifacts.\n');
         fprintf('==================================================================\n');
 
-        [continuousEEG, epochedEEG] = RELAX_muscle(continuousEEG, epochedEEG, RELAX_cfg);  
+        [continuousEEG, epochedEEG] = RELAX_muscle(continuousEEG, epochedEEG, RELAX_cfg);  % Function that creates a template of clean and muscle-artefacted data to be used for cleaning in MWF. 
         if RELAX_cfg.computerawmetrics==1
             [continuousEEG, epochedEEG] = RELAX_metrics_muscle(continuousEEG, epochedEEG, RELAX_cfg); % record muscle contamination metrics from raw data for comparison.
         end
@@ -713,30 +727,32 @@ for fcounter = 1:RELAX_cfg.FilesToProcess
         if isfield(EEG,'RELAX_Metrics')
             if isfield(EEG.RELAX_Metrics, 'Cleaned')
                 if isfield(EEG.RELAX_Metrics.Cleaned,'BlinkAmplitudeRatio')
-                    CleanedMetrics.BlinkAmplitudeRatio(1:size(EEG.RELAX_Metrics.Cleaned.BlinkAmplitudeRatio,1),FileNumber)=EEG.RELAX_Metrics.Cleaned.BlinkAmplitudeRatio;
+                    CleanedMetrics.BlinkAmplitudeRatio(1:size(EEG.RELAX_Metrics.Cleaned.BlinkAmplitudeRatio,1),fcounter)=EEG.RELAX_Metrics.Cleaned.BlinkAmplitudeRatio;
                     CleanedMetrics.BlinkAmplitudeRatio(CleanedMetrics.BlinkAmplitudeRatio==0)=NaN;
                 end
                 if isfield(EEG.RELAX_Metrics.Cleaned,'MeanMuscleStrengthFromOnlySuperThresholdValues')
-                    CleanedMetrics.MeanMuscleStrengthFromOnlySuperThresholdValues(FileNumber)=EEG.RELAX_Metrics.Cleaned.MeanMuscleStrengthFromOnlySuperThresholdValues; 
-                    CleanedMetrics.ProportionOfEpochsShowingMuscleAboveThresholdAnyChannel(FileNumber)=EEG.RELAX_Metrics.Cleaned.ProportionOfEpochsShowingMuscleAboveThresholdAnyChannel;
+                    CleanedMetrics.MeanMuscleStrengthFromOnlySuperThresholdValues(fcounter)=EEG.RELAX_Metrics.Cleaned.MeanMuscleStrengthFromOnlySuperThresholdValues; 
+                    CleanedMetrics.ProportionOfEpochsShowingMuscleAboveThresholdAnyChannel(fcounter)=EEG.RELAX_Metrics.Cleaned.ProportionOfEpochsShowingMuscleAboveThresholdAnyChannel;
                 end
                 if isfield(EEG.RELAX_Metrics.Cleaned,'All_SER')
-                    CleanedMetrics.All_SER(FileNumber)=EEG.RELAX_Metrics.Cleaned.All_SER;
-                    CleanedMetrics.All_ARR(FileNumber)=EEG.RELAX_Metrics.Cleaned.All_ARR;
+                    CleanedMetrics.All_SER(fcounter)=EEG.RELAX_Metrics.Cleaned.All_SER;
+                    CleanedMetrics.All_ARR(fcounter)=EEG.RELAX_Metrics.Cleaned.All_ARR;
                 end
             end
             if isfield(EEG.RELAX_Metrics, 'Raw')
                 if isfield(EEG.RELAX_Metrics.Raw,'BlinkAmplitudeRatio')
-                    RawMetrics.BlinkAmplitudeRatio(1:size(EEG.RELAX_Metrics.Raw.BlinkAmplitudeRatio,1),FileNumber)=EEG.RELAX_Metrics.Raw.BlinkAmplitudeRatio;
+                    RawMetrics.BlinkAmplitudeRatio(1:size(EEG.RELAX_Metrics.Raw.BlinkAmplitudeRatio,1),fcounter)=EEG.RELAX_Metrics.Raw.BlinkAmplitudeRatio;
                     RawMetrics.BlinkAmplitudeRatio(RawMetrics.BlinkAmplitudeRatio==0)=NaN;
                 end
                 if isfield(EEG.RELAX_Metrics.Raw,'MeanMuscleStrengthFromOnlySuperThresholdValues')
-                    RawMetrics.MeanMuscleStrengthFromOnlySuperThresholdValues(FileNumber)=EEG.RELAX_Metrics.Raw.MeanMuscleStrengthFromOnlySuperThresholdValues; 
-                    RawMetrics.ProportionOfEpochsShowingMuscleAboveThresholdAnyChannel(FileNumber)=EEG.RELAX_Metrics.Raw.ProportionOfEpochsShowingMuscleAboveThresholdAnyChannel;
+                    RawMetrics.MeanMuscleStrengthFromOnlySuperThresholdValues(fcounter)=EEG.RELAX_Metrics.Raw.MeanMuscleStrengthFromOnlySuperThresholdValues; 
+                    RawMetrics.ProportionOfEpochsShowingMuscleAboveThresholdAnyChannel(fcounter)=EEG.RELAX_Metrics.Raw.ProportionOfEpochsShowingMuscleAboveThresholdAnyChannel;
                 end
             end   
         end
     end
+    
+    %save a *.mat file here.
 
     %% Record warnings about potential issues:
 
@@ -785,16 +801,16 @@ for fcounter = 1:RELAX_cfg.FilesToProcess
             EEG.RELAX_issues_to_check.HighProportionOfArtifact_ICs=0;
         end
         EEG.RELAX_issues_to_check.DataMaybeTooShortForValidICA = EEG.RELAXProcessing_wICA.DataMaybeTooShortForValidICA;
-        EEG.RELAX_issues_to_check.fastica_symm_Didnt_Converge=EEG.RELAXProcessing_wICA.fastica_symm_Didnt_Converge(1,3);
+        %EEG.RELAX_issues_to_check.fastica_symm_Didnt_Converge=EEG.RELAXProcessing_wICA.fastica_symm_Didnt_Converge(1,3);
     end
     if RELAX_cfg.Perform_ICA_subtract==1
-        if EEG.RELAXProcessing_ICA.Proportion_artifactICs_reduced_by_ICA>0.80
-            EEG.RELAX_issues_to_check.HighProportionOfArtifact_ICs=EEG.RELAXProcessing_ICA.Proportion_artifactICs_reduced_by_ICA;
+        if EEG.RELAXProcessing_wICA.Proportion_artifactICs_reduced_by_wICA>0.80
+            EEG.RELAX_issues_to_check.HighProportionOfArtifact_ICs=EEG.RELAXProcessing_wICA.Proportion_artifactICs_reduced_by_wICA;
         else
             EEG.RELAX_issues_to_check.HighProportionOfArtifact_ICs=0;
         end
-        EEG.RELAX_issues_to_check.DataMaybeTooShortForValidICA = EEG.RELAXProcessing_ICA.DataMaybeTooShortForValidICA;
-        EEG.RELAX_issues_to_check.fastica_symm_Didnt_Converge=EEG.RELAXProcessing_ICA.fastica_symm_Didnt_Converge(1,3);
+        EEG.RELAX_issues_to_check.DataMaybeTooShortForValidICA = EEG.RELAXProcessing_wICA.DataMaybeTooShortForValidICA;
+        %EEG.RELAX_issues_to_check.fastica_symm_Didnt_Converge=EEG.RELAXProcessing_wICA.fastica_symm_Didnt_Converge(1,3);
     end
     
     %% If defined, interpolate the rejected electrodes after cleaning using spherical spline interpolation.

@@ -9,6 +9,8 @@ function Relax_cfg = CLV_CreateRELAX(testtype)
     Relax_cfg.OutputPath = fullfile(Relax_cfg.myPath, 'RELAXProcessed');                                % Path to folder in which processed datasets are saved. This may need to be created.
     
     %% Set the initial extreme outlier cleaning parameters.
+    Relax_cfg.sample_rate = 1024;
+    Relax_cfg.ms_per_sample = (1/Relax_cfg.sample_rate)*1000;
 
     Relax_cfg.Do_MWF_Once = 1;
     Relax_cfg.Do_MWF_Twice = 1;
@@ -22,7 +24,7 @@ function Relax_cfg = CLV_CreateRELAX(testtype)
     Relax_cfg.computerawmetrics = 1;                            % Compute blink and muscle metrics from the raw data.
     Relax_cfg.computecleanedmetrics = 1;                        % Compute SER, ARR, blink and muscle metrics from the cleaned data.
     Relax_cfg.MWFRoundToCleanBlinks = 2;                        % Clean blinks on first, second round. 
-    Relax_cfg.LowPassFilterAt_6Hz_BeforeDetectingBlinks = 'no';
+    Relax_cfg.LowPassFilterAt_6Hz_BeforeDetectingBlinks = 'no'; % Otherwise too restrictive
     
     Relax_cfg.ProbabilityDataHasNoBlinks = 0;                   % 0 = data almost certainly has blinks, 1 = data might not have blinks, 2 = data definitely doesn't have blinks.
     Relax_cfg.DriftSeverityThreshold = 10;                      % MAD from the median of all electrodes. This could be set lower and would catch less severe drift.
@@ -62,14 +64,14 @@ function Relax_cfg = CLV_CreateRELAX(testtype)
     Relax_cfg.saveround3 = 1;
     Relax_cfg.OnlyIncludeTaskRelatedEpochs = 0; 
 
-    Relax_cfg.MuscleSlopeThreshold = -0.31;                     % Log-frequency log-power slope threshold for muscle artifact. Less stringent = -0.31, Middle Stringency = -0.59 or more stringent = -0.72, more negative thresholds remove more muscle.
-    Relax_cfg.MaxProportionOfDataCanBeMarkedAsMuscle = 0.30;    % Maximum amount of data periods to be marked as muscle artifact for cleaning by the MWF. You want at least a reasonable amount of both clean and artifact templates for effective cleaning.
+    Relax_cfg.MuscleSlopeThreshold = -0.59;                     % Log-frequency log-power slope threshold for muscle artifact. Less stringent = -0.31, Middle Stringency = -0.59 or more stringent = -0.72, more negative thresholds remove more muscle.
+    Relax_cfg.MaxProportionOfDataCanBeMarkedAsMuscle = 0.50;    % Maximum amount of data periods to be marked as muscle artifact for cleaning by the MWF. You want at least a reasonable amount of both clean and artifact templates for effective cleaning.
     Relax_cfg.ProportionOfMuscleContaminatedEpochsAboveWhichToRejectChannel = 0.05;
     Relax_cfg.ProportionOfExtremeNoiseAboveWhichToRejectChannel = 0.05;
     Relax_cfg.MaxProportionOfElectrodesThatCanBeDeleted = 0.20;
-    Relax_cfg.InterpolateRejectedElectrodesAfterCleaning = 'no';
-    Relax_cfg.MWFDelayPeriod = 8;                               % The MWF includes both spatial and temporal information when filtering out artifacts. Longer delays apparently improve performance. 
+    Relax_cfg.InterpolateRejectedElectrodesAfterCleaning = 'yes';
+    Relax_cfg.MWFDelayPeriod_ms = 40;                         % Define the MWF delay period in ms.
+    Relax_cfg.MWFDelayPeriod = floor((Relax_cfg.MWFDelayPeriod_ms*(1/1000))*Relax_cfg.sample_rate); % The MWF includes both spatial and temporal information when filtering out artifacts. Longer delays apparently improve performance. 
     
-   
-
+  
 end 

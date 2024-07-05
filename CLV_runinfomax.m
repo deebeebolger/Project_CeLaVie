@@ -1,17 +1,21 @@
-function [Outeeg, wIC_all, A, W, IC] = CLV_runinfomax(EEG, RELAX_cfg, fname_curr)
+function [Outeeg, wIC_all, A, W, IC] = CLV_runinfomax(Outeeg, RELAX_cfg, fname_curr)
 
     fprintf('Carry out Independent Components Analysis (ICA) by applying the informax algorithm');
     %% Calculate the rank of the data
-    Outeeg = EEG;
-    rankeeg = getrank(Outeeg);
-    fprintf('The rank of the current dataset is %f.\n', rankeeg);
+    Outeeg = Outeeg;
+    %rankeeg = getrank(Outeeg);
+    %fprintf('The rank of the current dataset is %f.\n', rankeeg);
 
     %% Maybe ensure that this is run for the electrodes of type EEG only.
-    iseeg = ismember({Outeeg.chanlocs.type}, 'EEG');
+    iseeg = find(ismember({Outeeg.chanlocs.type}, 'EEG'));
     ncomps = iseeg;   % Define the number ICs
+    if size(iseeg,1)==1 && size(iseeg,2)>1
+        iseeg = iseeg';
+    end
     [weights, sphere] = runica(Outeeg.data(iseeg,:), 'ncomps', length(ncomps));
     
     %% Copy the IC weigths and sphere information to EEG dataset.
+    
     Outeeg.icaweights = weights;
     Outeeg.icasphere  = sphere;
     Outeeg.icachansind = iseeg;
@@ -65,6 +69,12 @@ function [Outeeg, wIC_all, A, W, IC] = CLV_runinfomax(EEG, RELAX_cfg, fname_curr
     ic2Rej = find(Outeeg.reject.gcompreject);        % Find component/s to reject.
     CLV_plotICTopos(Outeeg, ic2Rej, icThreshold);
 
+    % Approach taken from RELAX pipeline.
+    % Finds the class with the maximum for each IC, exlcuding the brain.
+
+    [~, I]=max(Outeeg.etc.ic_classification.ICLabel.classifications, [], 2);
+    ICsMostLikelyNotBrain=(I>1)';
+
     %% Wavelet thresholding of the ICs detected by ICLabel. 
     %  Reference: Neil Baily, 2020. 
     %  Need to define L: level for the stationary wavelet transform.
@@ -73,8 +83,11 @@ function [Outeeg, wIC_all, A, W, IC] = CLV_runinfomax(EEG, RELAX_cfg, fname_curr
     %  The data must be divisible by 2^L. 
     
     if ~isempty(ic2Rej)
-        fprintf("Carrying out wavelet thresholding of ICs.\n,..." + ...
-            "Begin by padding the data to ensure proper wavelet transform.\n")
+        
+        fprintf('============================================================================\n');
+        fprintf('Carrying out wavelet thresholding of ICS.\n');
+        fprintf('Begin by padding the data to ensure proper wavelet transform.\n')
+        fprintf('============================================================================\n');
        
         L = 5;
         mult = 1;
@@ -88,6 +101,11 @@ function [Outeeg, wIC_all, A, W, IC] = CLV_runinfomax(EEG, RELAX_cfg, fname_curr
         end
 
     %% Perform wavelet thresholding.
+
+    fprintf('============================================================================\n');
+    fprintf('Perform wavelet thresholding.\n');
+    fprintf('============================================================================\n');
+
         fprintf('Perform wavelet thresholding...\n')
         for icnt = 1:numel(ic2Rej)
             if ~isempty(extra)
@@ -103,6 +121,10 @@ function [Outeeg, wIC_all, A, W, IC] = CLV_runinfomax(EEG, RELAX_cfg, fname_curr
         end
         %% Pad non-artifacted components in the same manner as artifacted components.
 
+        fprintf('==================================================================================\n');
+        fprintf('Pad the non-artifacted components in the same manner as the artifacted components.\n');
+        fprintf('==================================================================================\n');
+
         icIndx   = 1:size(IC,1);
         nonartIC = ~ismember(icIndx, ic2Rej); % Find indices of non-artifacted ICs.
         wic_count = 1;
@@ -117,12 +139,17 @@ function [Outeeg, wIC_all, A, W, IC] = CLV_runinfomax(EEG, RELAX_cfg, fname_curr
 
         %% Plot the wIC and ICs for comparison
 
+        fprintf('============================================================================\n');
+        fprintf('Plot the wICA and ICs for comparison.\n');
+        fprintf('============================================================================\n');
+
         % Remove extra padding
         if ~isempty(extra)
             wIC_all = wIC_all(:,1:end-numel(extra));
         end
         Fs = Outeeg.srate;
         disp('Plotting');
+        f2 = figure();
         subplot(3,1,1);
             multisignalplot(IC(ic2Rej,:),Fs,'r');
             title('ICs');
@@ -134,6 +161,9 @@ function [Outeeg, wIC_all, A, W, IC] = CLV_runinfomax(EEG, RELAX_cfg, fname_curr
             title('Difference (IC - wIC)');
 
     %% Remove wICA artifact and reconstruct signals. 
+    fprintf('============================================================================\n');
+    fprintf('Remove wICA and reconstruct signals.\n');
+    fprintf('============================================================================\n');
 
     artifacts = A*wIC_all;
     
@@ -144,13 +174,81 @@ function [Outeeg, wIC_all, A, W, IC] = CLV_runinfomax(EEG, RELAX_cfg, fname_curr
     wavcleanEEG = EEG2D - artifacts;
     Outeeg.data = wavcleanEEG;
 
-
     else
         fprintf(['No artifacted ICs were detected by ICLabel.\n, ...' ...
             'You may need to adjust the icthreshold values.\n']);
 
     end % end of if isempty(ic2Rej) statement.
 
+    %% Report the wICA information
+
+    fprintf('============================================================================\n');
+    fprintf('Report the wICA information.\n');
+    fprintf('============================================================================\n');
+
+    ms_per_sample=(1000/Outeeg.srate);
+    if ((Outeeg.nbchan^2)*(120/ms_per_sample))>Outeeg.pnts
+        Outeeg.RELAXProcessing_wICA.DataMaybeTooShortForValidICA='yes';
+    else
+        Outeeg.RELAXProcessing_wICA.DataMaybeTooShortForValidICA='no';
+    end
+    
+    if strcmp (Outeeg.RELAXProcessing_wICA.DataMaybeTooShortForValidICA,'yes')
+        warning('Data may have been shorter than recommended for effective ICA decomposition')
+    end
+    
+    Outeeg.RELAXProcessing_wICA.Proportion_artifactICs_reduced_by_wICA = mean(ICsMostLikelyNotBrain);
+
+    if strcmp(RELAX_cfg.Report_all_ICA_info,'yes') && ~isempty(ic2Rej)
+
+        Outeeg.RELAXProcessing_wICA.ProportionICs_was_Brain = sum(I==1)/size(Outeeg.etc.ic_classification.ICLabel.classifications,1);
+        Outeeg.RELAXProcessing_wICA.ProportionICs_was_Muscle = sum(I==2)/size(Outeeg.etc.ic_classification.ICLabel.classifications,1);
+        Outeeg.RELAXProcessing_wICA.ProportionICs_was_Eye = sum(I==3)/size(Outeeg.etc.ic_classification.ICLabel.classifications,1);
+        Outeeg.RELAXProcessing_wICA.ProportionICs_was_Heart = sum(I==4)/size(Outeeg.etc.ic_classification.ICLabel.classifications,1);
+        Outeeg.RELAXProcessing_wICA.ProportionICs_was_LineNoise = sum(I==5)/size(Outeeg.etc.ic_classification.ICLabel.classifications,1);
+        Outeeg.RELAXProcessing_wICA.ProportionICs_was_ChannelNoise = sum(I==6)/size(Outeeg.etc.ic_classification.ICLabel.classifications,1);
+        Outeeg.RELAXProcessing_wICA.ProportionICs_was_Other = sum(I==7)/size(Outeeg.etc.ic_classification.ICLabel.classifications,1);  
+        
+
+        ICsMostLikelyBrain  = (I==1)';
+        ICsMostLikelyMuscle =(I==2)';
+        ICsMostLikelyEye    =(I==3)';
+        ICsMostLikelyHeart  =(I==4)';
+        ICsMostLikelyLineNoise    =(I==5)';
+        ICsMostLikelyChannelNoise =(I==6)';
+        ICsMostLikelyOther  =(I==7)';
+
+        for x=1:size(Outeeg.etc.ic_classification.ICLabel.classifications,1)
+            [~, varianceWav(x)] = compvar(Outeeg.data, Outeeg.icaact, Outeeg.icawinv, x);
+        end
+
+        BrainVariance = sum(abs(varianceWav(ICsMostLikelyBrain)));
+        ArtifactVariance = sum(abs(varianceWav(~ICsMostLikelyBrain)));
+        Outeeg.RELAXProcessing_wICA.ProportionVariance_was_BrainICs = (BrainVariance/(BrainVariance+ArtifactVariance));
+
+        MuscleVariance = sum(abs(varianceWav(ICsMostLikelyMuscle)));
+        EyeVariance = sum(abs(varianceWav(ICsMostLikelyEye)));
+        HeartVariance = sum(abs(varianceWav(ICsMostLikelyHeart)));
+        LineNoiseVariance = sum(abs(varianceWav(ICsMostLikelyLineNoise)));
+        ChannelNoiseVariance = sum(abs(varianceWav(ICsMostLikelyChannelNoise)));
+        OtherVariance = sum(abs(varianceWav(ICsMostLikelyOther)));
+
+        Outeeg.RELAXProcessing_wICA.ProportionVariance_was_MuscleICs = (MuscleVariance/(BrainVariance+ArtifactVariance));
+        Outeeg.RELAXProcessing_wICA.ProportionVariance_was_EyeICs = (EyeVariance/(BrainVariance+ArtifactVariance));
+        Outeeg.RELAXProcessing_wICA.ProportionVariance_was_HeartICs = (HeartVariance/(BrainVariance+ArtifactVariance));
+        Outeeg.RELAXProcessing_wICA.ProportionVariance_was_LineNoiseICs = (LineNoiseVariance/(BrainVariance+ArtifactVariance));
+        Outeeg.RELAXProcessing_wICA.ProportionVariance_was_ChannelNoiseICs = (ChannelNoiseVariance/(BrainVariance+ArtifactVariance));
+        Outeeg.RELAXProcessing_wICA.ProportionVariance_was_OtherICs = (OtherVariance/(BrainVariance+ArtifactVariance));
+    
+    end
+
+    %% Save the dataset with artifacted ICs subtracted.
+    
+    fname_ica2  = [fname_ica1, '-ICARej'];
+    Outeeg.setname = fname_ica2;
+    saveeeg_ica2 = fullfile(RELAX_cfg.OutputPath,fname_ica2);
+    Outeeg = pop_saveset( Outeeg, saveeeg_ica2); 
+    
     %% ------- Subfunction to calculation the rank of the data -------------
    
     function tmprank2 = getrank(tmpdata)

@@ -3,10 +3,10 @@
 function Relax_cfg = CLV_CreateRELAX(testtype)
 
     Relax_cfg = [];  % Initialise the RELAX configuration structure.
-    Relax_cfg.caploc = fullfile(filesep,'Users','bolger','Matlab','Projects','CeLaVie_EEG','Data_Processing','ChanLocs128.mat');
-    Relax_cfg.myPath = fullfile(filesep,'Users','bolger','Matlab','Projects','CeLaVie_EEG','Data'); % Path to the data to be processed.
-    Relax_cfg.myPathRaw = fullfile(Relax_cfg.myPath, testtype);                           % Path to raw data folder. All datasets here will be processed.
-    Relax_cfg.OutputPath = fullfile(Relax_cfg.myPath, 'RELAXProcessed');                                % Path to folder in which processed datasets are saved. This may need to be created.
+    Relax_cfg.caploc = fullfile(filesep,'Users','bolger','Matlab','Projects','CeLaVie_EEG','Data_Processing','ChanLocs128.mat');  % Path to change. Path to channel location file.
+    Relax_cfg.myPath = fullfile(filesep,'Users','bolger','Matlab','Projects','CeLaVie_EEG','Data'); % Path to change. Path to the data to be processed.
+    Relax_cfg.myPathRaw = fullfile(Relax_cfg.myPath, testtype);                           % Path to change. Path to raw data folder. All datasets here will be processed.
+    Relax_cfg.OutputPath = fullfile(Relax_cfg.myPath, 'RELAXProcessed');                  % Path to change. Path to folder in which processed datasets are saved. This may need to be created.
     
     %% Set the initial extreme outlier cleaning parameters.
     Relax_cfg.sample_rate = 1024;

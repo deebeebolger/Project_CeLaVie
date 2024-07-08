@@ -43,16 +43,16 @@
 function CLV_RunRELAX(testtype)
 
 %% Check dependencies are installed.
-%  The paths will change from one user to another.
+%  The paths will need to be changed from one user to another.
 
 fprintf('==================================================================\n')
 fprintf('Adding dependencies to matlab path.\n');
 fprintf('==================================================================\n')
 
-PrepFolderLocation = '/Users/bolger/Documents/MATLAB/PrepPipeline/';
+PrepFolderLocation = '/Users/bolger/Documents/MATLAB/PrepPipeline/';   % Path to change
 addpath(genpath(PrepFolderLocation), '-end'); % Use genpath to add with subfolders.
 
-MWFFolderLocation = '/Users/bolger/Documents/MATLAB/mwf-artifact-removal-master';
+MWFFolderLocation = '/Users/bolger/Documents/MATLAB/mwf-artifact-removal-master';  % Path to change
 addpath(genpath(MWFFolderLocation), '-end');
 
 %% Call of function to create the RELAX configuration structure.

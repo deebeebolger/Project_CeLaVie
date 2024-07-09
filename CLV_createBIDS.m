@@ -3,6 +3,14 @@
 %  the post-test and creates a directory in BIDS structure. The raw files
 %  are renamed according to BIDS convention and moved to the new BIDS
 %  structured directory.
+% 
+%  Each subject's data corresponds to a directory of raw data containing
+%  subdirectories for each session and data modality. 
+%  For each subject, there is a metadata file, "dataset_description_eeg.json", 
+%  file with details of the experiment task and the EEG recording system
+%  and experimental setup.
+%
+%  
 %
 %  Overview of the structure of the filenames:
 %  sub-XXX_ses-pretest_task-restingstate_eeg.bdf'

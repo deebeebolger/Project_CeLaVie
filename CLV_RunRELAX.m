@@ -79,8 +79,7 @@ else
 end
 
 %% SELECT THE RAW FILES TO BE LOADED.
-%  Find the number and type of files in the rawdata folder
-%  (RELAX_cfg.myPathRaw)tes
+%  Allows manual selection of the files to be processed.
 
 fprintf('==================================================================\n');
 fprintf('Select raw files in *.bdf or *.set format\n');
@@ -218,13 +217,13 @@ for fcounter = 1:RELAX_cfg.FilesToProcess
     %  analysis especially with a highpass cutoff > 0.2Hz, this can lead to
     %  distortions.
     %  1. A notch filter is applied to reduce line noise (47-53Hz).
-    %  2  A bandpass filter is applied.
+    %  2  A highpass filter (0.25Hz) is applied.
 
-    fprintf('==================================================================\n');
+    fprintf('===========================================================================================================\n');
     fprintf('Apply notch filter.\n');
-    fprintf('Filter (4th order Butterworth) : %d - %dHz.\n', RELAX_cfg.HighPassFilter,...
+    fprintf('Filter (4th order Butterworth) : Highpass at %dHz and optional (but not recommended) lowpass at %dHz.\n', RELAX_cfg.HighPassFilter,...
         RELAX_cfg.LowPassFilter);
-    fprintf('==================================================================\n');
+    fprintf('===========================================================================================================\n');
 
     if strcmp(RELAX_cfg.NotchFilterType,'Butterworth')
         % Use TESA to apply butterworth filter:
@@ -735,7 +734,7 @@ for fcounter = 1:RELAX_cfg.FilesToProcess
     %% Reject periods that were marked as NaNs in the MWF masks because they showed extreme shift within the epoch or extremely improbable data.
     
     fprintf('==================================================================\n');
-    fprintf('Reject dta periods marked as NaN in noise masks.\n');
+    fprintf('Reject data periods marked as NaN in noise masks.\n');
     fprintf('==================================================================\n');
 
     EEG = eeg_eegrej(EEG, EEG.RELAX.ExtremelyBadPeriodsForDeletion); 

@@ -40,10 +40,11 @@
 % RELAXProcessingExtremeRejections_allParticipants.mat
 % RELAX_issues_to_check.mat
 
-function CLV_RunRELAX(testtype)
+function CLV_RunRELAX()
 
 %% Check dependencies are installed.
 %  The paths will need to be changed from one user to another.
+testtype = 'posttest';
 
 fprintf('==================================================================\n')
 fprintf('Adding dependencies to matlab path.\n');
@@ -65,7 +66,6 @@ RELAX_cfg = CLV_CreateRELAX(testtype);
 
 %% Check that the folder to accept the processed data has been exists, if not, create it.
 %  The mkdir function appears not to function on m3 mac.
-
 
 fprintf('==================================================================\n');
 fprintf('Create folder for processed if it does not exist.\n');
@@ -101,25 +101,6 @@ else
     RELAX_cfg.FilesToProcess = numel(string(filename)); % Number of datasets to process.
 end
 
-%% Save the RELAX_cfg *.mat file as a json file in the directory 1 above directory eeg.
-
-fprintf('==================================================================\n');
-fprintf('Save RELAX config file as *.json file\n');
-fprintf('==================================================================\n');
-
-[parentpart, childpart, ~] = fileparts(filepath);
-if isempty(childpart)
-    [parentpart, ~, ~] = fileparts(fileparts(filepath));
-end
-
-% Save the Relax configuration *.mat file as a json file.
-
-json_params = jsonencode(RELAX_cfg, PrettyPrint=true);
-json_title = 'Relax_cfg.json';
-fid = fopen(fullfile(parentpart, json_title), 'w');
-fprintf(fid, '%s', json_params);
-fclose(fid);
-
 %% Loop through the selected datasets to carry out preprocessing.
 
 for fcounter = 1:RELAX_cfg.FilesToProcess
@@ -138,6 +119,21 @@ for fcounter = 1:RELAX_cfg.FilesToProcess
     elseif strcmp(ext, '.bdf')
         [EEG, ~,~] = pop_biosig(fullfile(filepath,filename{1,fcounter}), 'ref', 1);
     end
+    
+    %% Calculate the ms per sample and add info to RELAX_cfg mat file;
+    fprintf('==================================================================\n');
+    fprintf('Add the downsampling info to the RELAX_cfg file.\n');
+    fprintf('==================================================================\n');
+
+    if strcmp(RELAX_cfg.DownSample, 'yes')
+        RELAX_cfg.DownSample_to_X_Hz = 1024;
+        RELAX_cfg.ms_per_sample = 1000/RELAX_cfg.DownSample_to_X_Hz;
+    elseif strcmp(RELAX_cfg.DownSample, 'no')
+        RELAX_cfg.DownSample_to_X_Hz = srate;
+        RELAX_cfg.ms_per_sample = 1000/srate;
+    end
+    RELAX_cfg.MWFDelayPeriod = round(RELAX_cfg.MWFDelayPeriod_ms*(1000/RELAX_cfg.DownSample_to_X_Hz)); % The MWF includes both spatial and temporal information when,...
+    % filtering out artifacts. Longer delays apparently improve performance. 
 
     %% Add RELAX processing information to current EEG structure.
 
@@ -146,30 +142,30 @@ for fcounter = 1:RELAX_cfg.FilesToProcess
     fprintf('Add the raw dataset in *.set format.\n');
     fprintf('==================================================================\n');
 
+
     EEG.RELAXProcessing.aFileName=cellstr(FileName);
     EEG.RELAXProcessingExtremeRejections.aFileName=cellstr(FileName);
     EEG.setname = FileName;
     EEG.filepath = filepath;
     EEG.RELAX.Data_has_been_averagerereferenced=0;
     EEG.RELAX.Data_has_been_cleaned=0;
-    RELAX_cfg.ms_per_sample=(1000/EEG.srate);
 
     savefileone=[RELAX_cfg.myPath filesep 'RELAXProcessed' filesep 'RELAX_cfg'];
     save(savefileone,'RELAX_cfg');
 
-     %% RESAMPLE THE DATA HERE. 
-    fprintf('==================================================================\n');
-    fprintf('Downsample the data.\n');
-    fprintf('==================================================================\n');
+    %% Save the RELAX_cfg *.mat file as a json file in the directory 1 above directory eeg.
 
-    newFS = RELAX_cfg.sample_rate;
-    fprintf('Downsampling from %d to %d Hz', EEG.srate, newFS);
-    EEG = pop_resample(EEG, newFS);
-
-    if RELAX_cfg.ms_per_sample<0.7
-        warning('The sampling rate for this file is quite high. Depending on your processing power, RELAX may run slowly or even stall. RELAX was validated using 1000Hz sampling rates.');
-        warning('To address this, you could downsample your data with: EEG = pop_resample( EEG, 1000), then save the downsampled data prior to running RELAX');
-    end
+    fprintf('==================================================================\n');
+    fprintf('Save RELAX config file as *.json file\n');
+    fprintf('==================================================================\n');
+    
+    % Save the Relax configuration *.mat file as a json file.
+    
+    json_params = jsonencode(RELAX_cfg, PrettyPrint=true);
+    json_title = [FileName,'_Relax_cfg.json'];
+    fid = fopen(fullfile(RELAX_cfg.OutputPath, json_title), 'w');
+    fprintf(fid, '%s', json_params);
+    fclose(fid);
 
     %% Add the channel locations to the EEG.chanlocs field of the current dataset.
 
@@ -214,8 +210,6 @@ for fcounter = 1:RELAX_cfg.FilesToProcess
     FileName_nochan = [FileName, '-nochan'];
     EEG = pop_saveset(EEG, 'filename', FileName_nochan, 'filepath', RELAX_cfg.OutputPath);
 
-
-
     %% Band Pass filter the continuous data
     %  Need to verify the high-pass and low-pass filter limits applied when
     %  analysing micro-states.
@@ -228,15 +222,60 @@ for fcounter = 1:RELAX_cfg.FilesToProcess
 
     fprintf('==================================================================\n');
     fprintf('Apply notch filter.\n');
-    fprintf('Bandpass filter (4th order Butterworth) : %d - %dHz.\n', RELAX_cfg.HighPassFilter,...
+    fprintf('Filter (4th order Butterworth) : %d - %dHz.\n', RELAX_cfg.HighPassFilter,...
         RELAX_cfg.LowPassFilter);
     fprintf('==================================================================\n');
 
-    EEG = RELAX_filtbutter(EEG, RELAX_cfg.LineNoiseFrequency-3, RELAX_cfg.LineNoiseFrequency+3, 4, 'bandstop' );
-    EEG = RELAX_filtbutter( EEG, RELAX_cfg.HighPassFilter, RELAX_cfg.LowPassFilter, 4, 'bandpass' );
+    if strcmp(RELAX_cfg.NotchFilterType,'Butterworth')
+        % Use TESA to apply butterworth filter:
+        EEG = RELAX_filtbutter( EEG, RELAX_cfg.LineNoiseFrequency-3, RELAX_cfg.LineNoiseFrequency+3, 4, 'bandstop' );
+    end
 
-    FileName_filt = [FileName_nochan, '-filt'];
-    EEG = pop_saveset(EEG, 'filename', FileName_filt, 'filepath', RELAX_cfg.OutputPath);
+    FileName_notch = [FileName_nochan, '-notch'];
+    EEG = pop_saveset(EEG, 'filename', FileName_notch, 'filepath', RELAX_cfg.OutputPath);
+
+    % 2. Bandpass filter is applied.
+
+    if strcmp(RELAX_cfg.LowPassFilterBeforeMWF,'no') % updated implementation, avoiding low pass filtering prior to MWF reduces chances of rank deficiencies, increasing potential values for MWF delay period
+        if strcmp(RELAX_cfg.FilterType,'Butterworth')
+            EEG = RELAX_filtbutter( EEG, RELAX_cfg.HighPassFilter, [], 4, 'highpass' );
+        end
+        if strcmp(RELAX_cfg.FilterType,'pop_eegfiltnew')
+            EEG = pop_eegfiltnew(EEG,RELAX_cfg.HighPassFilter,[]);
+        end
+
+        FileName_presamp = [FileName_notch, '-HPfilt'];   % Save highpass filtered data.
+        EEG = pop_saveset(EEG, 'filename', FileName_presamp, 'filepath', RELAX_cfg.OutputPath);
+
+    end
+
+    if strcmp(RELAX_cfg.LowPassFilterBeforeMWF,'yes') % original implementation, not recommended unless downsampling, as increases chances of rank deficiencies
+        EEG = RELAX_filtbutter( EEG, RELAX_cfg.HighPassFilter, RELAX_cfg.LowPassFilter, 4, 'bandpass' );
+
+        FileName_presamp = [FileName_notch, '-Bandfilt'];   % Save band-pass filtered data.
+        EEG = pop_saveset(EEG, 'filename', FileName_presamp, 'filepath', RELAX_cfg.OutputPath);
+
+    end
+
+     %% RESAMPLE THE DATA HERE. 
+    fprintf('==================================================================\n');
+    fprintf('Downsample the data.\n');
+    fprintf('==================================================================\n');
+    
+    if strcmp(RELAX_cfg.DownSample,'yes')
+        newFS = RELAX_cfg.DownSample_to_X_Hz;
+        fprintf('Downsampling from %d to %d Hz', EEG.srate, newFS);
+        EEG = pop_resample(EEG, newFS);
+
+        FileName_resamp = [FileName_presamp, '-Resamp'];   % Save downsampled data.
+        EEG = pop_saveset(EEG, 'filename', FileName_resamp, 'filepath', RELAX_cfg.OutputPath);
+
+    end
+
+    if RELAX_cfg.ms_per_sample<0.7
+        warning('The sampling rate for this file is quite high. Depending on your processing power, RELAX may run slowly or even stall. RELAX was validated using 1000Hz sampling rates.');
+        warning('To address this, you could downsample your data with: EEG = pop_resample( EEG, 1000), then save the downsampled data prior to running RELAX');
+    end
 
     %% Plot the frequency spectrum of the scalp channels. 
     
@@ -288,6 +327,17 @@ for fcounter = 1:RELAX_cfg.FilesToProcess
     fprintf('==================================================================\n');
     fprintf('Eye-blink detection via IQR approach.\n');
     fprintf('==================================================================\n');
+    assignin('base','continuousEEG', continuousEEG);
+    
+    badperiodextreme_rej = continuousEEG.RELAX.ExtremelyBadPeriodsForDeletion; 
+    badperiodextreme_rej_error = [badperiodextreme_rej(:,1)==0];
+    if find(badperiodextreme_rej_error)>1
+        fprintf('********Need to correct the RELAX.ExtremelyBadPeriodsForDeletion field******\n')
+        continuousEEG.RELAX.ExtremelyBadPeriodsForDeletion = [];
+        continuousEEG.RELAX.ExtremelyBadPeriodsForDeletion = badperiodextreme_rej(~badperiodextreme_rej_error, :)
+    else
+        fprintf('********No need to correct the RELAX.ExtremelyBadPeriodsForDeletion field******\n')
+    end
 
     if RELAX_cfg.ProbabilityDataHasNoBlinks<2
         [continuousEEG, epochedEEG] = RELAX_blinks_IQR_method(continuousEEG, epochedEEG, RELAX_cfg); % Use an IQR threshold method to detect and mark blinks
@@ -338,6 +388,14 @@ for fcounter = 1:RELAX_cfg.FilesToProcess
         fprintf('No need to run this marking of artifacts for SER and ARR calculation as: \n Do MWF Once is %d\n Do MWF Twice is %d\n Do MWF Trice is %d.\n',...
             RELAX_cfg.Do_MWF_Once, RELAX_cfg.Do_MWF_Twice, RELAX_cfg.Do_MWF_Thrice)
 
+    end
+
+   if RELAX_cfg.saveextremesrejected==1
+    if ~exist([RELAX_cfg.myPath, filesep 'RELAXProcessed' filesep 'Extremes_Rejected'], 'dir')
+        mkdir([RELAX_cfg.myPath, filesep 'RELAXProcessed' filesep 'Extremes_Rejected'])
+    end
+    SaveSetExtremes_Rejected =[RELAX_cfg.myPath, filesep 'RELAXProcessed' filesep 'Extremes_Rejected', filesep FileName '_Extremes_Rejected.set'];    
+    EEG = pop_saveset( rawEEG, SaveSetExtremes_Rejected ); % If desired, save data here with bad channels deleted, filtering applied, extreme outlying data periods marked
     end
 
     %% THIS SECTION CONTAINS FUNCTIONS WHICH MARK AND CLEAN MUSCLE ARTIFACTS. Carry out first round of MWF. 

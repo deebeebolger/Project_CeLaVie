@@ -34,6 +34,80 @@ raw_datapath = fullfile(filesep, 'Users','bolger','Matlab','Projects','CeLaVie_E
 files2load = {dir(fullfile(raw_datapath,'*.bdf')).name}; % Return names of files with *.bdf extension as cell array.
 session = 'posttest';
 datatype = 'eeg';
+tasktype = 'restingstate';
+
+%% 
+
+xlspath = '/Users/bolger/Documents/Projects/CeLaVie/Celavie_docs';
+xlsfname = 'Pre-Post-Test_EEG_Celavie_metadata.xlsx';
+MetaDataIn = CLV_LoadMetaData(xlspath, xlsfname);
+
+%% Create participants.json file.
+
+Age = MetaDataIn.Age;
+Handedness = MetaDataIn.MainDom_;
+Gender = MetaDataIn.Genre;
+School = MetaDataIn.Ecole;
+SujetCode = MetaDataIn.Code;     % Subject Code
+Sujetnumber = MetaDataIn.Sujet;  % Subject Number
+
+Handedness_u = unique(Handedness);
+mtHandedness = cellfun(@isempty, Handedness_u,'UniformOutput', false);
+HandednessU = Handedness_u(~cell2mat(mtHandedness)); 
+
+Gender_u = unique(Gender);
+mtGender = cellfun(@isempty, Gender_u, 'UniformOutput', false);
+GenderU = Gender_u(~cell2mat(mtGender));
+
+School_u = unique(School);
+mtSchool = cellfun(@isempty, School_u, 'UniformOutput', false);
+SchoolU = School_u(~cell2mat(mtSchool));
+
+participants = struct();  % Initialise empty structure;
+participants.subjectnum.Description = 'the number of the participant';
+participants.subjectnum.Type = 'ordinal';
+
+participants.subjectcode.Description = 'the code attributed to each participant';
+participants.subjectcode.Type = 'anonymous code';
+
+participants.age.Description = "age of the participant";
+participants.age.Units = "years";
+
+participants.handedness.Description = 'handedness of the participant as reported by the participant.';
+[participants.handedness.Levels.right participants.handedness.Levels.both participants.handedness.Levels.left] = deal(HandednessU{:});
+
+participants.gender.Description = 'gender of the participant';
+[participants.gender.Levels.female participants.gender.Levels.male] = deal(GenderU{:});
+
+participants.school.Description = 'school of the participant';
+[participants.school.Levels.AL participants.school.Levels.M] = deal(SchoolU{:});
+
+% Save general participants information structure as *.json
+json_participants = jsonencode(participants, PrettyPrint=true);
+json_participants_title = 'participants.json';
+fid = fopen(fullfile(datapath,session, json_participants_title), 'w');
+fprintf(fid, '%s', json_participants);
+fclose(fid);
+
+%% Create the file participants.tsv
+%  Need to extract the following information from the MetaData excel file:
+%  - subject number
+%  - age
+%  - handedness
+%  - gender
+%  - school
+
+% Extract the anonymisation codes from individual dataset titles.
+txt = files2load;
+pat = digitsPattern;
+subCodes = extract(txt, pat);
+startzero_ind = find(startsWith(subCodes, '0'));
+CodesOnly = cellfun(@(x) x(2:end), subCodes(startzero_ind), 'UniformOutput',false);
+
+sujetsIndex = find(ismember(SujetCode, str2double(CodesOnly)));
+participants_info = T(sujetsIndex, ["Code","Sujet","Age","Genre","MainDom_", "Ecole"]);
+participants_csv_path = fullfile(datapath, session, 'participants.csv');
+writetable(participants_info,participants_csv_path)
 
 %% Create the BIDS based on each raw file.
 
@@ -50,11 +124,14 @@ for fcount = 1:numel(files2load)
     elseif strcmp(currfile_split, 'RS2')
         currtask = 'restingstate2';
     end
-    datapath_bids = fullfile(datapath, subject, currtask, datatype);
+    datapath_bids = fullfile(datapath, session, subject, tasktype, datatype, currtask);
     mkdir(datapath_bids)
 
-    newname = [subject,'_ses-',session,'_task-',currtask,'_',datatype,'.',x{1,2}];
+    newname = [subject,'_ses-',session,'_task-',tasktype,'_',datatype,'_',currtask.',x{1,2}];
     movefile(fullfile(raw_datapath,currfile), fullfile(datapath_bids, newname));
 
 end
+
+% Create derivatives directory
+derivpath_bids = fullfile(datapath, session, 'derivatives');
 

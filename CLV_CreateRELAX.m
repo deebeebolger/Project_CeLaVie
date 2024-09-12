@@ -3,12 +3,13 @@
 function Relax_cfg = CLV_CreateRELAX(testtype)
 
     Relax_cfg = [];  % Initialise the RELAX configuration structure.
-    Relax_cfg.caploc = fullfile(filesep,'Users','bolger','Matlab','Projects','CeLaVie_EEG','Data_Processing','ChanLocs128.mat');  % Path to change. Path to channel location file.
+    Relax_cfg.caploc = fullfile(filesep,'Users','bolger','Matlab','Projects','CeLaVie_EEG','Data_Processing');  % Path to change. Path to channel location file.
     Relax_cfg.myPath = fullfile(filesep,'Users','bolger','Matlab','Projects','CeLaVie_EEG','Data'); % Path to change. Path to the data to be processed.
-    Relax_cfg.OutputPath = fullfile(Relax_cfg.myPath, 'RELAXProcessed');                  % Path to change. Path to folder in which processed datasets are saved. This may need to be created.
+    %Relax_cfg.OutputPath = fullfile(Relax_cfg.myPath, 'RELAXProcessed');                  % Path to change. Path to folder in which processed datasets are saved. This may need to be created.
     
     %% Set the initial extreme outlier cleaning parameters.
     Relax_cfg.DownSample = 'yes';        % or no
+    Relax_cfg.DownSample_to_X_Hz = 512;
 
     Relax_cfg.Do_MWF_Once = 1;
     Relax_cfg.Do_MWF_Twice = 1;
@@ -52,7 +53,7 @@ function Relax_cfg = CLV_CreateRELAX(testtype)
     Relax_cfg.LowPassFilterBeforeMWF = 'no';                    % Avoiding low pass filtering prior to MWF reduces chances of rank deficiencies, increasing potential values for MWF delay period.
     Relax_cfg.FilterType = 'Butterworth';                       % or pop_eegfiltnew
     Relax_cfg.HighPassFilter = 0.25;                            % Sets the high pass filter. 1Hz is best for ICA decomposition if you're examining just oscillatory data, 0.25Hz seems to be the highest before ERPs are adversely affected by filtering.
-    Relax_cfg.LowPassFilter = 60;
+    Relax_cfg.LowPassFilter = 80;
     Relax_cfg.LineNoiseFrequency = 50;
     Relax_cfg.NotchFilterType = 'Butterworth';
     

@@ -45,6 +45,8 @@ function CLV_RunRELAX()
 %% Check dependencies are installed.
 %  The paths will need to be changed from one user to another.
 testtype = 'posttest';
+Data_type = 'eeg';
+Task_type = 'restingstate';
 
 fprintf('==================================================================\n')
 fprintf('Adding dependencies to matlab path.\n');
@@ -64,76 +66,123 @@ fprintf('==================================================================\n')
 
 RELAX_cfg = CLV_CreateRELAX(testtype);
 
-%% Check that the folder to accept the processed data has been exists, if not, create it.
-%  The mkdir function appears not to function on m3 mac.
+%% NEED TO INTEGRATE THE ROUTINE TO CREATE BIDS STRUCTURE HERE.
+
+[raw2load_bids, rawpath_bids,  derivative_path, subject_tags, currsession_path, SubjectInfo_table] = CLV_createBIDS(testtype, Data_type, Task_type);
+
+%% PRESENT THE FILES TO BE LOADED FOR PROCESSING.
+
+fprintf('================================================\n')
+fprintf('The following raw files will be processed: \n');
+cellfun(@(f) fprintf('%s\n',f), raw2load_bids, 'UniformOutput',false)
+fprintf('\n')
+fprintf('The following are the paths to the raw files to be processed: \n')
+cellfun(@(f1) fprintf('%s\n',f1), rawpath_bids,'UniformOutput',false)
+fprintf('================================================\n')
+
+
+%% PRESENT THE DIRECTORIES IN WHICH THE SAVE THE PROCESSED VERSIONS AND RELATED FILES OF EACH DATASET.
 
 fprintf('==================================================================\n');
-fprintf('Create folder for processed if it does not exist.\n');
+fprintf('The processed files and other derivatives will be saved in the following directories: \n');
+cellfun(@(d) fprintf('%s \n', d), derivative_path, 'UniformOutput',false)
 fprintf('==================================================================\n');
-
-if ~exist(RELAX_cfg.OutputPath, 'dir')
-    fprintf("Creating folder entitled: RELAXProcessed...\n")
-    [~,~] = mkdir(RELAX_cfg.OutputPath);
-else
-    fprintf("The folder RELAXProcessed already exists. No need to create a directory. \n")
-end
 
 %% SELECT THE RAW FILES TO BE LOADED.
 %  Allows manual selection of the files to be processed.
 
 fprintf('==================================================================\n');
-fprintf('Select raw files in *.bdf or *.set format\n');
+fprintf('Add the raw files to be processed to the RELAX configuration structure. \n');
 fprintf('==================================================================\n');
 
-[filename, filepath] = uigetfile({'*.bdf; *.set' 'BDF or eeglab set file';'*.bdf' 'BDF'; '*.set' 'eeglab set file'},...
-    'Choose a BDF or .set data file ', 'multiselect', 'on');
-RELAX_cfg.filename = filename;
-RELAX_cfg.filepath = filepath;
+RELAX_cfg.filenames = raw2load_bids;
+RELAX_cfg.filepaths = rawpath_bids;
+RELAX_cfg.FileNumber = numel(raw2load_bids);
 
-RELAX_cfg.FileNumber = numel(string(filename));
-if numel(string(filename))==1
+if numel(raw2load_bids)==1
     RELAX_cfg.SingleFile = 1;
     RELAX_cfg.FilesToProcess = 1;
-    filename = {filename};
+    filename = raw2load_bids;
 else
     RELAX_cfg.SingleFile = 0;                           % In the case of multiple files.
-    RELAX_cfg.FilesToProcess = numel(string(filename)); % Number of datasets to process.
+    RELAX_cfg.FilesToProcess = numel(raw2load_bids);    % Number of datasets to process.
 end
 
 %% Loop through the selected datasets to carry out preprocessing.
 
 for fcounter = 1:RELAX_cfg.FilesToProcess
 
-    fprintf("Preprocessing dataset number %d and title %s.\n ", fcounter, filename{1,fcounter});
-    [~,FileName,ext] = fileparts(filename{1, fcounter});
+    fprintf("Preprocessing dataset number %d and title: %s.\n ", fcounter, raw2load_bids{fcounter,1});
+    [~,FileName,ext] = fileparts(raw2load_bids{fcounter,1});
+
+    %% ADD THE CURRENT FILENAME AND RELATED DIRECTORIES TO THE RELAX CONFIG STRUCTURE.
+
+    fprintf('=======================================================================\n');
+    fprintf('Add current filename and filepaths to the RELAX configuration file.\n');
+    fprintf('=======================================================================\n');
+
+    RELAX_cfg.InputFilename_current = raw2load_bids{fcounter, 1};
+    RELAX_cfg.InputFilepath_current = rawpath_bids{fcounter,1};
+    RELAX_cfg.OutputPath_current = derivative_path{fcounter,1};
+
+    % Add the size of cap to use for the current subject. This will require
+    % using the following variable: SubjectInfo_table (imported from
+    % CLV_createBIDS()
+    currTaille = SubjectInfo_table.Taille{fcounter,1};
+    capSize = [upper(currTaille(1)),lower(currTaille(2:end))];
+    %chanlocs2load = ['Biosemi_128_Taille_',capSize,'.mat'];
+    chanlocs2load = 'ChanLocs128.mat';
+    RELAX_cfg.caploc_fullpath = fullfile(RELAX_cfg.caploc, chanlocs2load);
 
     %% Load in the dataset corresponding to the current filename. It is
     % possible to load in either *.bdf or .set format.
+    
     fprintf('==================================================================\n');
     fprintf('Load in the raw data in either *.bdf or *.set format.\n');
     fprintf('==================================================================\n');
 
     if strcmp(ext, '.set')
-        EEG = pop_load(filename{1, fcounter}, filepath);
+        EEG = pop_load(raw2load_bids{fcounter,1}, rawpath_bids{fcounter,1});
     elseif strcmp(ext, '.bdf')
-        [EEG, ~,~] = pop_biosig(fullfile(filepath,filename{1,fcounter}), 'ref', 1);
+        [EEG, ~,~] = pop_biosig(fullfile(rawpath_bids{fcounter,1},raw2load_bids{fcounter,1}), 'ref', 1);
     end
-    
+
+    %% Detect External Electrodes to be rejected. 
+
+    ExtChan2Rej = find(~ismember({EEG.chanlocs.type}, 'EEG'));
+    channotrej_bin = ~ismember(RELAX_cfg.ElectrodesToDelete, {EEG.chanlocs(ExtChan2Rej).labels});
+    EEG=pop_select(EEG,'nochannel', ExtChan2Rej);
+    EEG = eeg_checkset( EEG );
+
+    if sum(channotrej_bin)==0
+        fprintf('All electrodes predefined for rejection are external electrodes. \n');
+    else
+        chans2rej = RELAX_cfg.ElectrodesToDelete(find(channotrej_bin));
+        cellfun(@(c) fprintf('The following scalp electrodes remain to be rejected %s \n',c), chans2rej, 'UniformOutput',false);
+    end 
+
+    FileName_noextchan = [FileName, '-noextchan'];
+    EEG = pop_saveset(EEG, 'filename', FileName_noextchan, 'filepath', RELAX_cfg.OutputPath_current);
+
     %% Calculate the ms per sample and add info to RELAX_cfg mat file;
+    
     fprintf('==================================================================\n');
     fprintf('Add the downsampling info to the RELAX_cfg file.\n');
     fprintf('==================================================================\n');
 
     if strcmp(RELAX_cfg.DownSample, 'yes')
-        RELAX_cfg.DownSample_to_X_Hz = 1024;
+        
         RELAX_cfg.ms_per_sample = 1000/RELAX_cfg.DownSample_to_X_Hz;
+
     elseif strcmp(RELAX_cfg.DownSample, 'no')
+
+        srate = EEG.srate;
         RELAX_cfg.DownSample_to_X_Hz = srate;
         RELAX_cfg.ms_per_sample = 1000/srate;
     end
-    RELAX_cfg.MWFDelayPeriod = round(RELAX_cfg.MWFDelayPeriod_ms*(1000/RELAX_cfg.DownSample_to_X_Hz)); % The MWF includes both spatial and temporal information when,...
-    % filtering out artifacts. Longer delays apparently improve performance. 
 
+    RELAX_cfg.MWFDelayPeriod_samples = round(RELAX_cfg.MWFDelayPeriod_ms/(1000/RELAX_cfg.DownSample_to_X_Hz)); % The MWF includes both spatial and temporal information when,...
+                                                                                                       % Filtering out artifacts. Longer delays apparently improve performance. 
     %% Add RELAX processing information to current EEG structure.
 
     fprintf('==================================================================\n');
@@ -141,16 +190,12 @@ for fcounter = 1:RELAX_cfg.FilesToProcess
     fprintf('Add the raw dataset in *.set format.\n');
     fprintf('==================================================================\n');
 
-
     EEG.RELAXProcessing.aFileName=cellstr(FileName);
     EEG.RELAXProcessingExtremeRejections.aFileName=cellstr(FileName);
-    EEG.setname = FileName;
-    EEG.filepath = filepath;
+    EEG.setname = RELAX_cfg.InputFilename_current;
+    EEG.filepath = RELAX_cfg.InputFilepath_current;
     EEG.RELAX.Data_has_been_averagerereferenced=0;
     EEG.RELAX.Data_has_been_cleaned=0;
-
-    savefileone=[RELAX_cfg.myPath filesep 'RELAXProcessed' filesep 'RELAX_cfg'];
-    save(savefileone,'RELAX_cfg');
 
     %% Save the RELAX_cfg *.mat file as a json file in the directory 1 above directory eeg.
 
@@ -158,11 +203,10 @@ for fcounter = 1:RELAX_cfg.FilesToProcess
     fprintf('Save RELAX config file as *.json file\n');
     fprintf('==================================================================\n');
     
-    % Save the Relax configuration *.mat file as a json file.
-    
     json_params = jsonencode(RELAX_cfg, PrettyPrint=true);
-    json_title = [FileName,'_Relax_cfg.json'];
-    fid = fopen(fullfile(RELAX_cfg.OutputPath, json_title), 'w');
+    json_title = [subject_tags{fcounter,1},'_Relax_config.json'];
+    cfgpath_curr = fullfile(currsession_path,subject_tags{fcounter,1});
+    fid = fopen(fullfile(cfgpath_curr, json_title), 'w');
     fprintf(fid, '%s', json_params);
     fclose(fid);
 
@@ -173,42 +217,48 @@ for fcounter = 1:RELAX_cfg.FilesToProcess
      fprintf('Plot the channel layout.\n');
      fprintf('==================================================================\n');
 
-    load(RELAX_cfg.caploc,"chanLocations128")
-    for locnt = 1:length(chanLocations128)
-        EEG.chanlocs(locnt).labels = chanLocations128(locnt).labels;
-        EEG.chanlocs(locnt).theta = chanLocations128(locnt).theta;
-        EEG.chanlocs(locnt).radius = chanLocations128.radius;
-        [EEG.chanlocs(locnt).X, EEG.chanlocs(locnt).Y, EEG.chanlocs(locnt).Z] = deal(chanLocations128(locnt).X, chanLocations128(locnt).Y,...
-            chanLocations128(locnt).Z);
-        [EEG.chanlocs(locnt).sph_theta, EEG.chanlocs(locnt).sph_phi, EEG.chanlocs(locnt).sph_radius] = deal(chanLocations128(locnt).sph_theta, ...
-            chanLocations128(locnt).sph_phi, chanLocations128(locnt).sph_radius);
-        EEG.chanlocs(locnt).urchan = chanLocations128(locnt).urchan;
-    end
+    chanIn = load(RELAX_cfg.caploc_fullpath);
+    fNom1 = fieldnames(chanIn);
+    fieldNom_chan = fNom1{1,1};
+    chanLocations128 = chanIn.(fieldNom_chan);
+    eegchansIdx = find(ismember({chanLocations128.labels},{EEG.chanlocs.labels}));
+    currChanLocations = chanLocations128(eegchansIdx); 
+    ref = EEG.chanlocs(1).ref;
+    EEG.chanlocs = [];
+    EEG.chanlocs = currChanLocations;
+    
     % Plot topography showing les channel layout.
     fprintf('Plotting topography of the currently applied channel layout.\n')
-    figure; topoplot([], chanLocations128, 'electrodes', 'labels')
+    figure; topoplot([], currChanLocations, 'electrodes', 'labels')
+    
     % Save a *.set file with the channel locations added.
-    fprintf('Saving current dataset, %s, with channel locations added as *.set file in %s...\n', FileName, RELAX_cfg.OutputPath);
-    EEG = pop_saveset( EEG, 'filename',FileName, 'filepath',RELAX_cfg.OutputPath);
+    fprintf('Saving current dataset, %s, with channel locations added as *.set file in %s...\n', FileName, RELAX_cfg.OutputPath_current);
+    EEG = pop_saveset( EEG, 'filename',FileName_noextchan, 'filepath',RELAX_cfg.OutputPath_current);
 
     %% Delete those channels marked for deletion or considered irrelevant for the current study.
     %  Should we delete the auxiliary channels (channels 137 tp 143).
-    fprintf('==================================================================\n');
-    fprintf('Exclude electrodes marked for rejection in config file.\n');
-    fprintf('==================================================================\n');
+    fprintf('=======================================================================\n');
+    fprintf('Exclude remaining scalp electrodes marked for rejection in config file.\n');
+    fprintf('=======================================================================\n');
 
-    if ~isempty(RELAX_cfg.ElectrodesToDelete)
-        EEG=pop_select(EEG,'nochannel',RELAX_cfg.ElectrodesToDelete);
+    if sum(channotrej_bin)>0
+
+        chandel_idx = find(ismember({chanLocations128.labels},RELAX_cfg.ElectrodesToDelete));
+        EEG=pop_select(EEG,'nochannel', chandel_idx);
         EEG = eeg_checkset( EEG );
+        EEG.allchan=EEG.chanlocs; % take list of all included channels before any rejections
+        
+        % Save *.set file with EEG channels removed.
+        FileName_nochan = [FileName, '-nochan'];
+        EEG = pop_saveset(EEG, 'filename', FileName_nochan, 'filepath', RELAX_cfg.OutputPath_current);
     else
         fprintf('No electrodes marked for rejection at this point.\n')
+        EEG.allchan=EEG.chanlocs; % take list of all included channels before any rejections
+
+        FileName_nochan = FileName_noextchan;
+        EEG = pop_saveset(EEG, 'filename', FileName_nochan, 'filepath', RELAX_cfg.OutputPath_current);
     end
-    EEG.allchan=EEG.chanlocs; % take list of all included channels before any rejections
-
-    % Save *.set file with EEG channels removed.
-    FileName_nochan = [FileName, '-nochan'];
-    EEG = pop_saveset(EEG, 'filename', FileName_nochan, 'filepath', RELAX_cfg.OutputPath);
-
+    
     %% Band Pass filter the continuous data
     %  Need to verify the high-pass and low-pass filter limits applied when
     %  analysing micro-states.
@@ -231,7 +281,7 @@ for fcounter = 1:RELAX_cfg.FilesToProcess
     end
 
     FileName_notch = [FileName_nochan, '-notch'];
-    EEG = pop_saveset(EEG, 'filename', FileName_notch, 'filepath', RELAX_cfg.OutputPath);
+    EEG = pop_saveset(EEG, 'filename', FileName_notch, 'filepath', RELAX_cfg.OutputPath_current);
 
     % 2. Bandpass filter is applied.
 
@@ -244,7 +294,7 @@ for fcounter = 1:RELAX_cfg.FilesToProcess
         end
 
         FileName_presamp = [FileName_notch, '-HPfilt'];   % Save highpass filtered data.
-        EEG = pop_saveset(EEG, 'filename', FileName_presamp, 'filepath', RELAX_cfg.OutputPath);
+        EEG = pop_saveset(EEG, 'filename', FileName_presamp, 'filepath', RELAX_cfg.OutputPath_current);
 
     end
 
@@ -252,7 +302,7 @@ for fcounter = 1:RELAX_cfg.FilesToProcess
         EEG = RELAX_filtbutter( EEG, RELAX_cfg.HighPassFilter, RELAX_cfg.LowPassFilter, 4, 'bandpass' );
 
         FileName_presamp = [FileName_notch, '-Bandfilt'];   % Save band-pass filtered data.
-        EEG = pop_saveset(EEG, 'filename', FileName_presamp, 'filepath', RELAX_cfg.OutputPath);
+        EEG = pop_saveset(EEG, 'filename', FileName_presamp, 'filepath', RELAX_cfg.OutputPath_current);
 
     end
 
@@ -267,7 +317,7 @@ for fcounter = 1:RELAX_cfg.FilesToProcess
         EEG = pop_resample(EEG, newFS);
 
         FileName_resamp = [FileName_presamp, '-Resamp'];   % Save downsampled data.
-        EEG = pop_saveset(EEG, 'filename', FileName_resamp, 'filepath', RELAX_cfg.OutputPath);
+        EEG = pop_saveset(EEG, 'filename', FileName_resamp, 'filepath', RELAX_cfg.OutputPath_current);
 
     end
 
@@ -303,7 +353,7 @@ for fcounter = 1:RELAX_cfg.FilesToProcess
     EEG.RELAXProcessingExtremeRejections.PREPBasedChannelToReject={};
     allchans = {EEG.chanlocs.labels};
     EEG.RELAXProcessingExtremeRejections.PREPBasedChannelToReject = allchans(1,noisyOut.noisyChannels.all);
-    EEG=pop_select(EEG,'nochannel',noisyOut.noisyChannels.all); % Delete noisy electrodes detected by PREP
+    EEG = pop_select(EEG,'nochannel',noisyOut.noisyChannels.all); % Delete noisy electrodes detected by PREP
 
     %% Epoch data, detect extremely bad data, delete channels if over the set threshold for proportion of data affected by extreme outlier for each electrode
     %  Epoch data also to detect time periods of noisy data to exclude from MWF cleaning and to delete before wICA cleaning.
@@ -330,6 +380,7 @@ for fcounter = 1:RELAX_cfg.FilesToProcess
     
     badperiodextreme_rej = continuousEEG.RELAX.ExtremelyBadPeriodsForDeletion; 
     badperiodextreme_rej_error = [badperiodextreme_rej(:,1)==0];
+
     if find(badperiodextreme_rej_error)>1
         fprintf('********Need to correct the RELAX.ExtremelyBadPeriodsForDeletion field******\n')
         continuousEEG.RELAX.ExtremelyBadPeriodsForDeletion = [];
@@ -341,7 +392,7 @@ for fcounter = 1:RELAX_cfg.FilesToProcess
     if RELAX_cfg.ProbabilityDataHasNoBlinks<2
         [continuousEEG, epochedEEG] = RELAX_blinks_IQR_method(continuousEEG, epochedEEG, RELAX_cfg); % Use an IQR threshold method to detect and mark blinks
         if continuousEEG.RELAX.IQRmethodDetectedBlinks(1,1)==0                                       % If a participants doesn't show any blinks, make a note
-            NoBlinksDetected{fcounter,1}=FileName;
+            NoBlinksDetected{fcounter,1} = FileName;
             warning('No blinks were detected - if blinks are expected then you should visually inspect the file');
         end
         if RELAX_cfg.computerawmetrics==1
@@ -356,7 +407,7 @@ for fcounter = 1:RELAX_cfg.FilesToProcess
     fprintf('==================================================================\n');
 
     RELAXProcessingExtremeRejectionsAllParticipants(fcounter,:) = struct2table(epochedEEG.RELAXProcessingExtremeRejections,'AsArray',true);
-    rawEEG=continuousEEG;          % Take a copy of the not yet cleaned data for calculation of all cleaning SER and ARR at the end
+    rawEEG = continuousEEG;          % Take a copy of the not yet cleaned data for calculation of all cleaning SER and ARR at the end
 
     %% Mark artifacts for calculating SER and ARR, regardless of whether MWF is performed (RELAX v1.1.3 update).
     fprintf('==============================================================\n');
@@ -389,12 +440,9 @@ for fcounter = 1:RELAX_cfg.FilesToProcess
 
     end
 
-   if RELAX_cfg.saveextremesrejected==1
-    if ~exist([RELAX_cfg.myPath, filesep 'RELAXProcessed' filesep 'Extremes_Rejected'], 'dir')
-        mkdir([RELAX_cfg.myPath, filesep 'RELAXProcessed' filesep 'Extremes_Rejected'])
-    end
-    SaveSetExtremes_Rejected =[RELAX_cfg.myPath, filesep 'RELAXProcessed' filesep 'Extremes_Rejected', filesep FileName '_Extremes_Rejected.set'];    
-    EEG = pop_saveset( rawEEG, SaveSetExtremes_Rejected ); % If desired, save data here with bad channels deleted, filtering applied, extreme outlying data periods marked
+    if RELAX_cfg.saveextremesrejected==1
+        SaveSetExtremes_Rejected =[RELAX_cfg.OutputPath_current, filesep FileName '_Extremes_Rejected.set'];
+        EEG = pop_saveset( rawEEG, SaveSetExtremes_Rejected); % If desired, save data here with bad channels deleted, filtering applied, extreme outlying data periods marked
     end
 
     %% THIS SECTION CONTAINS FUNCTIONS WHICH MARK AND CLEAN MUSCLE ARTIFACTS. Carry out first round of MWF. 
@@ -415,7 +463,7 @@ for fcounter = 1:RELAX_cfg.FilesToProcess
             [continuousEEG, epochedEEG] = RELAX_metrics_muscle(continuousEEG, epochedEEG, RELAX_cfg); % record muscle contamination metrics from raw data for comparison.
         end
 
-        EEG=continuousEEG; % Return continuousEEG to the "EEG" variable for MWF processing
+        EEG = continuousEEG; % Return continuousEEG to the "EEG" variable for MWF processing
 
         %% If including eye blink cleaning in first round MWF, then insert eye blink mask into noise mask.
      
@@ -480,11 +528,11 @@ for fcounter = 1:RELAX_cfg.FilesToProcess
         
         % Save round 1 MWF pre-processing:
         if RELAX_cfg.saveround1==1
-            if ~exist([RELAX_cfg.myPath, filesep 'RELAXProcessed' filesep '1xMWF'], 'dir')
-                mkdir([RELAX_cfg.myPath, filesep 'RELAXProcessed' filesep '1xMWF']);
+            if ~exist([RELAX_cfg.OutputPath_current, filesep '1xMWF'], 'dir')
+                mkdir([RELAX_cfg.OutputPath_current, filesep '1xMWF']);
             end
             Fname_mwf = [FileName, '_MWF1'];
-            SaveSetMWF1 =[RELAX_cfg.myPath, filesep 'RELAXProcessed' filesep '1xMWF', filesep FileName '_MWF1.set'];    
+            SaveSetMWF1 =[RELAX_cfg.OutputPath_current, filesep '1xMWF', filesep FileName '_MWF1.set'];    
             EEG = pop_saveset( EEG, SaveSetMWF1 ); 
         end
 
@@ -584,11 +632,11 @@ for fcounter = 1:RELAX_cfg.FilesToProcess
         
         % Save round 2 MWF pre-processing:
         if RELAX_cfg.saveround2==1
-            if ~exist([RELAX_cfg.myPath, filesep 'RELAXProcessed' filesep '2xMWF'], 'dir')
-                mkdir([RELAX_cfg.myPath, filesep 'RELAXProcessed' filesep '2xMWF'])
+            if ~exist([RELAX_cfg.OutputPath_current, filesep '2xMWF'], 'dir')
+                mkdir([RELAX_cfg.OutputPath_current, filesep '2xMWF'])
             end
             Fname_mwf = [FileName, '_MWF2'];
-            SaveSetMWF2 =[RELAX_cfg.myPath, filesep 'RELAXProcessed' filesep '2xMWF', filesep FileName '_MWF2.set'];    
+            SaveSetMWF2 =[RELAX_cfg.OutputPath_current, filesep '2xMWF', filesep FileName '_MWF2.set'];    
             EEG = pop_saveset( EEG, SaveSetMWF2 ); 
         end     
 
@@ -708,11 +756,11 @@ for fcounter = 1:RELAX_cfg.FilesToProcess
         EEG = rmfield(EEG,'RELAXProcessing');
 
         if RELAX_cfg.saveround3==1
-            if ~exist([RELAX_cfg.myPath, filesep 'RELAXProcessed' filesep '3xMWF'], 'dir')
-                mkdir([RELAX_cfg.myPath, filesep 'RELAXProcessed' filesep '3xMWF'])
+            if ~exist([RELAX_cfg.OutputPath_current, filesep '3xMWF'], 'dir')
+                mkdir([RELAX_cfg.OutputPath_current, filesep '3xMWF'])
             end
             Fname_mwf = [FileName, '_MWF3'];
-            SaveSetMWF3 =[RELAX_cfg.myPath,filesep 'RELAXProcessed' filesep '3xMWF', filesep FileName '_MWF3.set'];    
+            SaveSetMWF3 =[RELAX_cfg.OutputPath_current, filesep '3xMWF', filesep FileName '_MWF3.set'];    
             EEG = pop_saveset( EEG, SaveSetMWF3 ); 
         end
 
@@ -885,7 +933,7 @@ for fcounter = 1:RELAX_cfg.FilesToProcess
 
     fname_interp   = [EEG.setname, '-ssinterp'];
     Outeeg.setname = fname_interp;
-    saveeeg_interp = fullfile(RELAX_cfg.OutputPath,fname_interp);
+    saveeeg_interp = fullfile(RELAX_cfg.OutputPath_current,fname_interp);
     Outeeg = pop_saveset(EEG, saveeeg_interp); 
     
  end

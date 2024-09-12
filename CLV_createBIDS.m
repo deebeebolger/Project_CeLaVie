@@ -1,16 +1,18 @@
+
+function [filesinBIDS2Load, pathinBIDS,  derivpathinBIDS, allsubjects_title, session_path, participants_info] = CLV_createBIDS(session, datatype, tasktype)
 %% Function to store data in BIDS structure.
 %  This script takes a directory of raw files from either the pre-test or
 %  the post-test and creates a directory in BIDS structure. The raw files
 %  are renamed according to BIDS convention and moved to the new BIDS
 %  structured directory.
-% 
+%
 %  Each subject's data corresponds to a directory of raw data containing
-%  subdirectories for each session and data modality. 
-%  For each subject, there is a metadata file, "dataset_description_eeg.json", 
+%  subdirectories for each session and data modality.
+%  For each subject, there is a metadata file, "dataset_description_eeg.json",
 %  file with details of the experiment task and the EEG recording system
 %  and experimental setup.
 %
-%  
+%
 %
 %  Overview of the structure of the filenames:
 %  sub-XXX_ses-pretest_task-restingstate_eeg.bdf'
@@ -32,11 +34,21 @@ datapath = fullfile(filesep, 'Users','bolger','Matlab','Projects','CeLaVie_EEG',
 raw_datapath = fullfile(filesep, 'Users','bolger','Matlab','Projects','CeLaVie_EEG','Data_RestingState','RELAXRaw', filesep);
 
 files2load = {dir(fullfile(raw_datapath,'*.bdf')).name}; % Return names of files with *.bdf extension as cell array.
-session = 'posttest';
-datatype = 'eeg';
-tasktype = 'restingstate';
 
-%% 
+%% CHECK IF A SESSION RELATED FOLDER EXISTS AND IF NOT, CREATE.
+
+session_path = fullfile(datapath, session);
+if exist("session_path","dir")
+    fprintf('The session path : %s already exists.\n', session_path)
+elseif ~exist("session_path","dir")
+    sess_status = mkdir(session_path);     % Generate the path.
+end
+
+%% CREATE A DERIVATIVES DIRECTORY IN WHICH TO SAVE PROCESSED DATA.
+
+derivpath_bids = fullfile(session_path, 'derivatives');
+
+%% LOAD IN THE META DATA FROM EXCEL FILE.
 
 xlspath = '/Users/bolger/Documents/Projects/CeLaVie/Celavie_docs';
 xlsfname = 'Pre-Post-Test_EEG_Celavie_metadata.xlsx';
@@ -53,7 +65,7 @@ Sujetnumber = MetaDataIn.Sujet;  % Subject Number
 
 Handedness_u = unique(Handedness);
 mtHandedness = cellfun(@isempty, Handedness_u,'UniformOutput', false);
-HandednessU = Handedness_u(~cell2mat(mtHandedness)); 
+HandednessU = Handedness_u(~cell2mat(mtHandedness));
 
 Gender_u = unique(Gender);
 mtGender = cellfun(@isempty, Gender_u, 'UniformOutput', false);
@@ -85,7 +97,7 @@ participants.school.Description = 'school of the participant';
 % Save general participants information structure as *.json
 json_participants = jsonencode(participants, PrettyPrint=true);
 json_participants_title = 'participants.json';
-fid = fopen(fullfile(datapath,session, json_participants_title), 'w');
+fid = fopen(fullfile(session_path, json_participants_title), 'w');
 fprintf(fid, '%s', json_participants);
 fclose(fid);
 
@@ -101,37 +113,63 @@ fclose(fid);
 txt = files2load;
 pat = digitsPattern;
 subCodes = extract(txt, pat);
-startzero_ind = find(startsWith(subCodes, '0'));
-CodesOnly = cellfun(@(x) x(2:end), subCodes(startzero_ind), 'UniformOutput',false);
 
-sujetsIndex = find(ismember(SujetCode, str2double(CodesOnly)));
-participants_info = T(sujetsIndex, ["Code","Sujet","Age","Genre","MainDom_", "Ecole"]);
-participants_csv_path = fullfile(datapath, session, 'participants.csv');
+sujetsIndex = find(ismember(SujetCode, str2double(subCodes)));
+participants_info = MetaDataIn(sujetsIndex, ["Code","Sujet","Age","Genre","MainDom_", "Ecole", "Diametre", "AxeAntero_Posterieur",...
+    "AxeGauche_Droite", "Couleur", "Taille"]);
+participants_csv_path = fullfile(session_path, 'participants.csv');
 writetable(participants_info,participants_csv_path)
 
 %% Create the BIDS based on each raw file.
+filesinBIDS2Load = cell(numel(files2load),1);
+pathinBIDS = cell(numel(files2load),1);
+derivpathinBIDS = cell(numel(files2load),1);
+allsubjects_title = cell(numel(files2load),1);
 
 for fcount = 1:numel(files2load)
-    
-    currfile = files2load{1,fcount};
-    currfile_split = strsplit(currfile, '_');
-    x = strsplit(currfile_split{1,2}, '.');
-    sujnum_curr = x{1,1};
-    subject = ['sub-0',sujnum_curr];
 
-    if strcmp(currfile_split{1,1}, 'RS1') 
+    currfile = files2load{1,fcount};
+    currfile_split1 = strsplit(currfile, '_');
+    x = strsplit(currfile_split1{1,2}, '.');
+    pat1 = digitsPattern;
+    xdigit = extract(currfile_split1{1,1}, pat1);
+    if length(xdigit{1,1})==2
+        subject = ['sub-0',xdigit{1,1}];
+    elseif length(xdigit{1,1})==1
+        subject = ['sub-00',xdigit{1,1}];
+    end
+    allsubjects_title{fcount,1} = subject;
+
+    if strcmp(x{1,1}, 'RS1')
         currtask = 'restingstate1';
-    elseif strcmp(currfile_split, 'RS2')
+    elseif strcmp(x{1,1}, 'RS2')
         currtask = 'restingstate2';
     end
-    datapath_bids = fullfile(datapath, session, subject, tasktype, datatype, currtask);
-    mkdir(datapath_bids)
+    datapath_bids = fullfile(session_path, subject, tasktype, datatype, currtask);  % Contains raw data.
+    if ~exist(datapath_bids, "dir")
+        status1 = mkdir(datapath_bids);
+    elseif exist(datapath_bids, "dir")
+        fprintf('The bids datapath, %s, already exists.\n', datapath_bids);
+    end
 
-    newname = [subject,'_ses-',session,'_task-',tasktype,'_',datatype,'_',currtask.',x{1,2}];
+    derivpath_curr = fullfile(derivpath_bids, subject, [tasktype,'_',datatype]);    % Contains processed data and related files.
+    if ~exist(derivpath_curr, "dir")
+        status2 = mkdir(derivpath_curr);
+    elseif exist(derivpath_curr, "dir")
+        fprintf('The bids datapath, %s, already exists.\n', derivpath_curr);
+    end
+
+    newname = [subject,'_sess-',session,'_task-',tasktype,'_',datatype,'_',currtask,'.',x{1,2}];
     movefile(fullfile(raw_datapath,currfile), fullfile(datapath_bids, newname));
+    
+    filesinBIDS2Load{fcount, 1} = newname;
+    pathinBIDS{fcount, 1} = datapath_bids;
+    derivpathinBIDS{fcount, 1} = derivpath_curr;
 
 end
+end % end of function
 
-% Create derivatives directory
-derivpath_bids = fullfile(datapath, session, 'derivatives');
+
+
+
 

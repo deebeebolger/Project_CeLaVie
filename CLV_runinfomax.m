@@ -7,7 +7,8 @@ function [Outeeg, wIC_all, A, W, IC] = CLV_runinfomax(Outeeg, RELAX_cfg, fname_c
     %fprintf('The rank of the current dataset is %f.\n', rankeeg);
 
     %% Maybe ensure that this is run for the electrodes of type EEG only.
-    iseeg = find(ismember({Outeeg.chanlocs.type}, 'EEG'));
+   % iseeg = find(ismember({Outeeg.chanlocs.type}, 'EEG'));
+    iseeg = 1:size(Outeeg.data,1)
     ncomps = iseeg;   % Define the number ICs
     if size(iseeg,1)==1 && size(iseeg,2)>1
         iseeg = iseeg';
@@ -53,7 +54,7 @@ function [Outeeg, wIC_all, A, W, IC] = CLV_runinfomax(Outeeg, RELAX_cfg, fname_c
     
     fname_ica1  = [fname_curr, '-ICA'];
     Outeeg.setname = fname_ica1;
-    saveeeg_ica = fullfile(RELAX_cfg.OutputPath,fname_ica1);
+    saveeeg_ica = fullfile(RELAX_cfg.OutputPath_current,fname_ica1);
     Outeeg = pop_saveset( Outeeg, saveeeg_ica); 
 
     %% Identify artifactual ICs with ICLabel.
@@ -246,7 +247,7 @@ function [Outeeg, wIC_all, A, W, IC] = CLV_runinfomax(Outeeg, RELAX_cfg, fname_c
     
     fname_ica2  = [fname_ica1, '-ICARej'];
     Outeeg.setname = fname_ica2;
-    saveeeg_ica2 = fullfile(RELAX_cfg.OutputPath,fname_ica2);
+    saveeeg_ica2 = fullfile(RELAX_cfg.OutputPath_current,fname_ica2);
     Outeeg = pop_saveset( Outeeg, saveeeg_ica2); 
     
     %% ------- Subfunction to calculation the rank of the data -------------

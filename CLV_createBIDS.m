@@ -118,7 +118,15 @@ sujetsIndex = find(ismember(SujetCode, str2double(subCodes)));
 participants_info = MetaDataIn(sujetsIndex, ["Code","Sujet","Age","Genre","MainDom_", "Ecole", "Diametre", "AxeAntero_Posterieur",...
     "AxeGauche_Droite", "Couleur", "Taille"]);
 participants_csv_path = fullfile(session_path, 'participants.csv');
-writetable(participants_info,participants_csv_path)
+if ~exist(participants_csv_path, 'file')
+    fprintf('A participants file: \n %s already exists, \n create a new participant info file. \n', participants_csv_path);
+    writetable(participants_info,participants_csv_path)
+else
+    fprintf('A participants file: \n %s already exists,\n add current participant info to existing file. \n',participants_csv_path);
+    T = readtable(participants_csv_path);
+    TAll = [T; participants_info];
+    writetable(TAll, participants_csv_path)
+end
 
 %% Create the BIDS based on each raw file.
 filesinBIDS2Load = cell(numel(files2load),1);

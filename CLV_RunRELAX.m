@@ -69,6 +69,7 @@ RELAX_cfg = CLV_CreateRELAX(testtype);
 %% NEED TO INTEGRATE THE ROUTINE TO CREATE BIDS STRUCTURE HERE.
 
 [raw2load_bids, rawpath_bids,  derivative_path, subject_tags, currsession_path, SubjectInfo_table] = CLV_createBIDS(testtype, Data_type, Task_type);
+assignin('base','subject_tags', subject_tags)
 
 %% PRESENT THE FILES TO BE LOADED FOR PROCESSING.
 
@@ -108,6 +109,11 @@ else
     RELAX_cfg.FilesToProcess = numel(raw2load_bids);    % Number of datasets to process.
 end
 
+%% Initialise variables to accept the indices and titles of rejected electrodes.
+
+IdxRej = cell(RELAX_cfg.FilesToProcess, 1);
+ChannomRej = cell(RELAX_cfg.FilesToProcess, 1);
+
 %% Loop through the selected datasets to carry out preprocessing.
 
 for fcounter = 1:RELAX_cfg.FilesToProcess
@@ -130,8 +136,8 @@ for fcounter = 1:RELAX_cfg.FilesToProcess
     % CLV_createBIDS()
     currTaille = SubjectInfo_table.Taille{fcounter,1};
     capSize = [upper(currTaille(1)),lower(currTaille(2:end))];
-    %chanlocs2load = ['Biosemi_128_Taille_',capSize,'.mat'];
-    chanlocs2load = 'ChanLocs128.mat';
+    chanlocs2load = ['Biosemi_128_Taille_',capSize,'.mat'];
+    %chanlocs2load = 'ChanLocs128.mat';
     RELAX_cfg.caploc_fullpath = fullfile(RELAX_cfg.caploc, chanlocs2load);
 
     %% Load in the dataset corresponding to the current filename. It is
@@ -235,6 +241,11 @@ for fcounter = 1:RELAX_cfg.FilesToProcess
     fprintf('Saving current dataset, %s, with channel locations added as *.set file in %s...\n', FileName, RELAX_cfg.OutputPath_current);
     EEG = pop_saveset( EEG, 'filename',FileName_noextchan, 'filepath',RELAX_cfg.OutputPath_current);
 
+    %% Create Channel and Electrode csv file.
+
+    ChannelFile_create(rawpath_bids{fcounter,1}, raw2load_bids{fcounter,1}, raw2load_bids{fcounter,1}); % Call of subfunction to create channel file.
+    ElectrodeFile_create(rawpath_bids{fcounter,1}, raw2load_bids{fcounter,1}, currChanLocations);       % Call of subfunction to create electrode file.
+    
     %% Delete those channels marked for deletion or considered irrelevant for the current study.
     %  Should we delete the auxiliary channels (channels 137 tp 143).
     fprintf('=======================================================================\n');
@@ -335,7 +346,7 @@ for fcounter = 1:RELAX_cfg.FilesToProcess
     
     scalpNum = length(EEG.allchan);
     [frefs, pows, BadChans] = showSpectrum(EEG, string({EEG.chanlocs(1:scalpNum).labels}), 1:scalpNum, 1:scalpNum,...
-    [EEG.setname,': Bandpass filtered', '(', num2str(RELAX_cfg.HighPassFilter), 'Hz - ', num2str(RELAX_cfg.LowPassFilter),'Hz)'],...
+    [EEG.setname,': Notch and HP-filtered', '(', num2str(RELAX_cfg.HighPassFilter),')'],...
     scalpNum/2);
 
     %% Apply PREP pipeline functions to detect noisy electrodes.
@@ -384,7 +395,7 @@ for fcounter = 1:RELAX_cfg.FilesToProcess
     if find(badperiodextreme_rej_error)>1
         fprintf('********Need to correct the RELAX.ExtremelyBadPeriodsForDeletion field******\n')
         continuousEEG.RELAX.ExtremelyBadPeriodsForDeletion = [];
-        continuousEEG.RELAX.ExtremelyBadPeriodsForDeletion = badperiodextreme_rej(~badperiodextreme_rej_error, :)
+        continuousEEG.RELAX.ExtremelyBadPeriodsForDeletion = badperiodextreme_rej(~badperiodextreme_rej_error, :);
     else
         fprintf('********No need to correct the RELAX.ExtremelyBadPeriodsForDeletion field******\n')
     end
@@ -400,14 +411,16 @@ for fcounter = 1:RELAX_cfg.FilesToProcess
         end
     end
 
+
     %% Record extreme artifact rejection details for all participants in single table.
 
     fprintf('==================================================================\n');
     fprintf('Record artifact rejection details in table.\n');
     fprintf('==================================================================\n');
 
-    RELAXProcessingExtremeRejectionsAllParticipants(fcounter,:) = struct2table(epochedEEG.RELAXProcessingExtremeRejections,'AsArray',true);
+    RELAXProcessingExtremeRejectionsAllParticipants{fcounter,:} = struct2table(epochedEEG.RELAXProcessingExtremeRejections,'AsArray',true);
     rawEEG = continuousEEG;          % Take a copy of the not yet cleaned data for calculation of all cleaning SER and ARR at the end
+    assignin('base','RELAXProcessingExtremeRejectionsAllParticipants', RELAXProcessingExtremeRejectionsAllParticipants)
 
     %% Mark artifacts for calculating SER and ARR, regardless of whether MWF is performed (RELAX v1.1.3 update).
     fprintf('==============================================================\n');
@@ -432,8 +445,8 @@ for fcounter = 1:RELAX_cfg.FilesToProcess
             [Marking_all_artifacts_for_SER_ARR] = RELAX_pad_brief_mask_periods (Marking_all_artifacts_for_SER_ARR, RELAX_cfg, 'blinks');
         end
         
-        continuousEEG.RELAX.NoiseMaskFullLengthR1=Marking_all_artifacts_for_SER_ARR.RELAXProcessing.Details.NoiseMaskFullLength;
-        rawEEG.RELAX.NoiseMaskFullLengthR1=Marking_all_artifacts_for_SER_ARR.RELAXProcessing.Details.NoiseMaskFullLength;
+        continuousEEG.RELAX.NoiseMaskFullLengthR1 = Marking_all_artifacts_for_SER_ARR.RELAXProcessing.Details.NoiseMaskFullLength;
+        rawEEG.RELAX.NoiseMaskFullLengthR1 = Marking_all_artifacts_for_SER_ARR.RELAXProcessing.Details.NoiseMaskFullLength;
     else
         fprintf('No need to run this marking of artifacts for SER and ARR calculation as: \n Do MWF Once is %d\n Do MWF Twice is %d\n Do MWF Trice is %d.\n',...
             RELAX_cfg.Do_MWF_Once, RELAX_cfg.Do_MWF_Twice, RELAX_cfg.Do_MWF_Thrice)
@@ -444,6 +457,13 @@ for fcounter = 1:RELAX_cfg.FilesToProcess
         SaveSetExtremes_Rejected =[RELAX_cfg.OutputPath_current, filesep FileName '_Extremes_Rejected.set'];
         EEG = pop_saveset( rawEEG, SaveSetExtremes_Rejected); % If desired, save data here with bad channels deleted, filtering applied, extreme outlying data periods marked
     end
+
+    %%
+
+    scalpNum = length(EEG.chanlocs);
+    [frefs, pows, BadChans] = showSpectrum(EEG, string({EEG.chanlocs(1:scalpNum).labels}), 1:scalpNum, 1:scalpNum,...
+    [EEG.setname,': Post Pre-MWF artificat detection and bad channel rejection'],...
+    scalpNum/2);
 
     %% THIS SECTION CONTAINS FUNCTIONS WHICH MARK AND CLEAN MUSCLE ARTIFACTS. Carry out first round of MWF. 
     % Any one of these functions can be commented out to ignore those artifacts
@@ -719,8 +739,8 @@ for fcounter = 1:RELAX_cfg.FilesToProcess
         [EEG] = RELAX_pad_brief_mask_periods (EEG, RELAX_cfg, 'notblinks');
         
         EEG.RELAX.NoiseMaskFullLengthR3=EEG.RELAXProcessing.Details.NoiseMaskFullLength;
-        EEG.RELAXProcessing.ProportionMarkedInMWFArtifactMaskTotal=mean(EEG.RELAXProcessing.Details.NoiseMaskFullLength,'omitnan');
-        EEG.RELAX.ProportionMarkedInMWFArtifactMaskTotalR3=EEG.RELAXProcessing.ProportionMarkedInMWFArtifactMaskTotal; 
+        EEG.RELAXProcessing.ProportionMarkedInMWFArtifactMaskTotal= mean(EEG.RELAXProcessing.Details.NoiseMaskFullLength,'omitnan');
+        EEG.RELAX.ProportionMarkedInMWFArtifactMaskTotalR3 = EEG.RELAXProcessing.ProportionMarkedInMWFArtifactMaskTotal; 
 
         %% RUN MWF TO CLEAN DATA BASED ON MASKS CREATED ABOVE:
         
@@ -935,7 +955,50 @@ for fcounter = 1:RELAX_cfg.FilesToProcess
     Outeeg.setname = fname_interp;
     saveeeg_interp = fullfile(RELAX_cfg.OutputPath_current,fname_interp);
     Outeeg = pop_saveset(EEG, saveeeg_interp); 
+
+    %% Find the number and indices of electrodes rejected for the current dataset.
     
- end
+
+    IdxRej{fcounter,1} = ~ismember({EEG.allchan.labels},EEG.RELAX.ListOfChannelsAfterRejections); % Indices of rejected channels
+    ChannomRej{fcounter,1} = {EEG.allchan(IdxRej{fcounter,1}).labels};
+    
+end
+
+%% Plot a raster-type plot show the rejected electrodes par participant processed.
+
+figRej = figure;
+set(figRej, 'Color', [1 1 1], 'NumberTitle', 'off', 'Name', 'Summary of Channel Rejection')
+IdxRej_bin =cell2mat(IdxRej)';
+imRej = imagesc(IdxRej_bin);
+colormap(gca, "hot")
+set(gca,'XTick',1: size(IdxRej,1), 'YDir','reverse');
+xlabel('Participants', 'FontSize', 14); ylabel('Channel index', 'FontSize', 14); title('Click on channels for information')
+datacursormode on
+dcm = datacursormode(gcf);
+set(dcm, 'UpdateFcn', {@showchanlabel, {EEG.allchan.labels}})
 
 end % End of main calling function.
+
+function ChannelFile_create(pathIn, fileIn, fileIn_name)
+% Subfunction to create a channel file required in BIDS structure.0
+
+    hdr = ft_read_header(fullfile(pathIn,fileIn));
+    ChannelFile = [];
+    ChannelFile.Name = hdr.label;
+    ChannelFile.type = hdr.chantype;
+    ChannelFile.units = hdr.chanunit;
+    ChannelTable = struct2table(ChannelFile);
+    splitFname = strsplit(fileIn_name,'.');
+    channelFname = [splitFname{1,1},'_channels.csv'];
+    writetable(ChannelTable, fullfile(pathIn,channelFname), 'FileType','text');
+
+end 
+
+function ElectrodeFile_create(pathIn, fileIn_name, channelCoords)
+
+    ElectrodeTable = struct2table(channelCoords);
+    splitFname = strsplit(fileIn_name,'.');
+    electrodeFname = [splitFname{1,1},'_electrodes.csv'];
+    writetable(ElectrodeTable, fullfile(pathIn, electrodeFname), 'FileType','text');
+
+end

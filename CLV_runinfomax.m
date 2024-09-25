@@ -13,7 +13,7 @@ function [Outeeg, wIC_all, A, W, IC] = CLV_runinfomax(Outeeg, RELAX_cfg, fname_c
     if size(iseeg,1)==1 && size(iseeg,2)>1
         iseeg = iseeg';
     end
-    [weights, sphere] = runica(Outeeg.data(iseeg,:), 'ncomps', length(ncomps));
+    [weights, sphere] = runica(Outeeg.data(iseeg,:), 'ncomps', length(ncomps), 'extended', 1);
     
     %% Copy the IC weigths and sphere information to EEG dataset.
     
@@ -64,7 +64,7 @@ function [Outeeg, wIC_all, A, W, IC] = CLV_runinfomax(Outeeg, RELAX_cfg, fname_c
     Outeeg = iclabel(Outeeg); 
 
     % IC classes: Brain, Muscle, Eye, Heart, LineNoise, ChannelNoise, Other
-    icThreshold    = [0 0.2;0.8 1; 0.8 1; 0.8 1; 0.8 1; 0.8 1; 0 0];
+    icThreshold    = [0 0.0; 0.8 1; 0.8 1; 0.8 1; 0.8 1; 0.8 1; 0 0];
     
     Outeeg = pop_icflag(Outeeg, icThreshold);
     ic2Rej = find(Outeeg.reject.gcompreject);        % Find component/s to reject.
@@ -73,7 +73,7 @@ function [Outeeg, wIC_all, A, W, IC] = CLV_runinfomax(Outeeg, RELAX_cfg, fname_c
     % Approach taken from RELAX pipeline.
     % Finds the class with the maximum for each IC, exlcuding the brain.
 
-    [~, I]=max(Outeeg.etc.ic_classification.ICLabel.classifications, [], 2);
+    [~, I] = max(Outeeg.etc.ic_classification.ICLabel.classifications, [], 2);
     ICsMostLikelyNotBrain=(I>1)';
 
     %% Wavelet thresholding of the ICs detected by ICLabel. 

@@ -18,6 +18,11 @@ function Relax_cfg = CLV_CreateRELAX(testtype)
     Relax_cfg.Perform_wICA_on_ICLabel = 1; 
     Relax_cfg.Perform_ICA_subtract = 1;
     Relax_cfg.ICA_method = 'infomax';
+    if strcmp(Relax_cfg.ICA_method, 'infomax')
+        Relax_cfg.Infomax_ext = 1;
+    else
+        Relax_cfg.Infomax_ext = [];
+    end
     Relax_cfg.Report_all_ICA_info = 'no';
     
     Relax_cfg.computerawmetrics = 1;                            % Compute blink and muscle metrics from the raw data.

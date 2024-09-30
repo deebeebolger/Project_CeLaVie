@@ -13,7 +13,7 @@ function [Outeeg, wIC_all, A, W, IC] = CLV_runinfomax(Outeeg, RELAX_cfg, fname_c
     if size(iseeg,1)==1 && size(iseeg,2)>1
         iseeg = iseeg';
     end
-    [weights, sphere] = runica(Outeeg.data(iseeg,:), 'ncomps', length(ncomps), 'extended', 1);
+    [weights, sphere] = runica(Outeeg.data(iseeg,:), 'ncomps', length(ncomps), 'extended', RELAX_cfg.Infomax_ext);
     
     %% Copy the IC weigths and sphere information to EEG dataset.
     

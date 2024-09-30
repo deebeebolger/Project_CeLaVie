@@ -205,16 +205,16 @@ for fcounter = 1:RELAX_cfg.FilesToProcess
 
     %% Save the RELAX_cfg *.mat file as a json file in the directory 1 above directory eeg.
 
-    fprintf('==================================================================\n');
-    fprintf('Save RELAX config file as *.json file\n');
-    fprintf('==================================================================\n');
-    
-    json_params = jsonencode(RELAX_cfg, PrettyPrint=true);
-    json_title = [subject_tags{fcounter,1},'_Relax_config.json'];
-    cfgpath_curr = fullfile(currsession_path,subject_tags{fcounter,1});
-    fid = fopen(fullfile(cfgpath_curr, json_title), 'w');
-    fprintf(fid, '%s', json_params);
-    fclose(fid);
+    % fprintf('==================================================================\n');
+    % fprintf('Save RELAX config file as *.json file\n');
+    % fprintf('==================================================================\n');
+    % 
+    % json_params = jsonencode(RELAX_cfg, PrettyPrint=true);
+    % json_title = [subject_tags{fcounter,1},'_Relax_config.json'];
+    % cfgpath_curr = fullfile(currsession_path,subject_tags{fcounter,1});
+    % fid = fopen(fullfile(cfgpath_curr, json_title), 'w');
+    % fprintf(fid, '%s', json_params);
+    % fclose(fid);
 
     %% Add the channel locations to the EEG.chanlocs field of the current dataset.
 
@@ -343,11 +343,10 @@ for fcounter = 1:RELAX_cfg.FilesToProcess
     fprintf('Plot the frequency spectrum of scalp electrodes.\n');
     fprintf('==================================================================\n');
     
-    
+    spectitle = [EEG.setname,': Notch and HP-filtered', '(', num2str(RELAX_cfg.HighPassFilter),')'];
     scalpNum = length(EEG.allchan);
     [frefs, pows, BadChans] = showSpectrum(EEG, string({EEG.chanlocs(1:scalpNum).labels}), 1:scalpNum, 1:scalpNum,...
-    [EEG.setname,': Notch and HP-filtered', '(', num2str(RELAX_cfg.HighPassFilter),')'],...
-    scalpNum/2);
+    spectitle, scalpNum/2);
 
     %% Apply PREP pipeline functions to detect noisy electrodes.
     %  This deals mainly with flat channels and channels with "improbable"
@@ -458,7 +457,7 @@ for fcounter = 1:RELAX_cfg.FilesToProcess
         EEG = pop_saveset( rawEEG, SaveSetExtremes_Rejected); % If desired, save data here with bad channels deleted, filtering applied, extreme outlying data periods marked
     end
 
-    %%
+    %% Compute PSD of dataset after extreme artifact rejection.
 
     scalpNum = length(EEG.chanlocs);
     [frefs, pows, BadChans] = showSpectrum(EEG, string({EEG.chanlocs(1:scalpNum).labels}), 1:scalpNum, 1:scalpNum,...
@@ -961,6 +960,19 @@ for fcounter = 1:RELAX_cfg.FilesToProcess
 
     IdxRej{fcounter,1} = ~ismember({EEG.allchan.labels},EEG.RELAX.ListOfChannelsAfterRejections); % Indices of rejected channels
     ChannomRej{fcounter,1} = {EEG.allchan(IdxRej{fcounter,1}).labels};
+
+    %% Save the RELAX_cfg *.mat file as a json file in the directory 1 above directory eeg.
+
+    fprintf('==================================================================\n');
+    fprintf('Save RELAX config file as *.json file\n');
+    fprintf('==================================================================\n');
+    
+    json_params = jsonencode(RELAX_cfg, PrettyPrint=true);
+    json_title = [subject_tags{fcounter,1},'_Relax_config.json'];
+    cfgpath_curr = fullfile(currsession_path,subject_tags{fcounter,1});
+    fid = fopen(fullfile(cfgpath_curr, json_title), 'w');
+    fprintf(fid, '%s', json_params);
+    fclose(fid);
     
 end
 
@@ -976,6 +988,9 @@ xlabel('Participants', 'FontSize', 14); ylabel('Channel index', 'FontSize', 14);
 datacursormode on
 dcm = datacursormode(gcf);
 set(dcm, 'UpdateFcn', {@showchanlabel, {EEG.allchan.labels}})
+
+
+
 
 end % End of main calling function.
 

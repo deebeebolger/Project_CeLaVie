@@ -35,6 +35,10 @@ raw_datapath = fullfile(filesep, 'Users','bolger','Matlab','Projects','CeLaVie_E
 
 files2load = {dir(fullfile(raw_datapath,'*.bdf')).name}; % Return names of files with *.bdf extension as cell array.
 
+datasetInfo_path = fullfile(filesep, 'Users','bolger','Matlab','Projects','CeLaVie_EEG', 'Data_Processing');
+datasetInfo_fname = 'subjectlevel_eeg.csv';
+
+
 %% CHECK IF A SESSION RELATED FOLDER EXISTS AND IF NOT, CREATE.
 
 session_path = fullfile(datapath, session);
@@ -53,6 +57,7 @@ derivpath_bids = fullfile(session_path, 'derivatives');
 xlspath = '/Users/bolger/Documents/Projects/CeLaVie/Celavie_docs';
 xlsfname = 'Pre-Post-Test_EEG_Celavie_metadata.xlsx';
 MetaDataIn = CLV_LoadMetaData(xlspath, xlsfname);
+assignin('base', "MetaDataIn", MetaDataIn)
 
 %% Create participants.json file.
 
@@ -171,13 +176,35 @@ for fcount = 1:numel(files2load)
     movefile(fullfile(raw_datapath,currfile), fullfile(datapath_bids, newname));
     
     filesinBIDS2Load{fcount, 1} = newname;
+    currsujet_info = MetaDataIn(sujetsIndex(fcount), ["Diametre", "AxeAntero_Posterieur","AxeGauche_Droite", "CommentairesElectrodesRS1"]);
+    make_eeg_json(datasetInfo_path, datasetInfo_fname, newname(1:end-4), datapath_bids, currsujet_info);
+
+    assignin('base', 'currsujet_info', currsujet_info)
+
     pathinBIDS{fcount, 1} = datapath_bids;
     derivpathinBIDS{fcount, 1} = derivpath_curr;
 
 end
 end % end of function
 
+function make_eeg_json(datapath, datafname, currfname, eegdatapath, currsujet_info)
 
+    currpath = fullfile(datapath, datafname);
+    T = readtable(currpath, "ReadRowNames",true, "Delimiter",',', 'ReadVariableNames',false);
+    
+    Tbis = rows2vars(T);
+    Tbis.HeadCircumference = [num2str(currsujet_info.Diametre),'cm'];
+    Tbis.HeadAntero_Posterior = [num2str(currsujet_info.AxeAntero_Posterieur), 'cm'];
+    Tbis.HeadLeft_Right = [num2str(currsujet_info.AxeGauche_Droite), 'cm'];
+    Tbis.SubjectArtefactDescription = [currsujet_info.CommentairesElectrodesRS1];
+    
+    json_eeg = jsonencode(table2struct(Tbis), "PrettyPrint",true);
+    json_eeg_title = [currfname,'_eeg.json'];
+    fid = fopen(fullfile(eegdatapath, json_eeg_title), 'w');
+    fprintf(fid, '%s', json_eeg);
+    fclose(fid);
+
+end 
 
 
 

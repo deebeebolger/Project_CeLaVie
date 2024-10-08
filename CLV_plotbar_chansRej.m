@@ -36,12 +36,20 @@ while rechoix == 1
     
 end 
 
-%% Load in the datasets selected above.
+%% Load in the datasets selected above and extract the number of rejected channels from all datasets.
 
 dataIn = cellfun(@(x,y) pop_loadset(x,y), fnameAll, fpathAll, 'UniformOutput',false); 
 rejChans = cellfun(@(x1) x1.RELAXProcessingExtremeRejections.PREPBasedChannelToReject, dataIn, 'UniformOutput',false);
 subjectTags = cellfun(@(x2) x2.setname(1:7), dataIn, 'UniformOutput',false);
 chanrejNum = cellfun(@(x3) numel(x3), rejChans, 'UniformOutput',false);
+SRate = cellfun(@(s1) s1.srate, dataIn, 'UniformOutput', false);
+
+%% Extract the total duration of rejected time for all datasets.
+%  Then calculate the total duration for each dataset. 
+
+rejTIntvals = cellfun(@(y1) y1.RELAX.ExtremelyBadPeriodsForDeletion, dataIn, 'UniformOutput', false);
+rejTDur = cellfun(@(y2, s2) diff(y2')/s2, rejTIntvals, SRate, 'UniformOutput',false);
+rejTDur_total = cellfun(@(y3) sum(y3), rejTDur, 'UniformOutput',false);
 
 %% Plot bar-chart of the rejected channels for the selected participants.
 
@@ -50,7 +58,7 @@ set(chanrejBar_fig, 'Color', [1 1 1], 'Name', 'Bar chart of rejected channels pe
 
 X = categorical(subjectTags);
 Y = cell2mat(chanrejNum);
-b = bar(X,Y)
+b = bar(X,Y);
 b.BarWidth = 0.45;
 b.FaceColor = [0 .5 .5];
 b.EdgeColor = [0 .9 .9];
@@ -60,7 +68,24 @@ xtips = b.XEndPoints;
 ytips = b.YEndPoints;
 text(xtips, ytips, labelsBar, 'HorizontalAlignment','center', 'VerticalAlignment','bottom')
 
+%% Plot bar-chart of the rejected time intervals for each of the selected participants.
 
+timerejBar_fig = figure;
+set(timerejBar_fig, 'Color', [1 1 1], 'Name', 'Bar chart of total rejected time per subject.')
+
+X1 = categorical(subjectTags);
+Y1 = cell2mat(rejTDur_total);
+b1 = bar(X1, Y1);
+b1.BarWidth = 0.45;
+b1.FaceColor = [0 .5 .5];
+b1.EdgeColor = [0 .9 .9];
+b1.LineWidth = 1.5;
+labelsBar1 = string(b1.YData);
+xtips1 = b1.XEndPoints;
+ytips1 = b1.YEndPoints;
+text(xtips1, ytips1, labelsBar1, 'HorizontalAlignment','center', 'VerticalAlignment','bottom')
+
+end 
 
 
 

@@ -4,7 +4,7 @@ function CLV_microstate_analysis_QualityCheck()
 %% Load in all the data for a give session
 
 session = 'pretest';
-reststate = 'restingstate2';
+reststate = 'restingstate1';
 
 datapath = fullfile(filesep,'Users','bolger','Matlab','Projects','CeLaVie_EEG','Data', session, 'derivatives');
 alldirs = {dir(datapath).name};
@@ -33,9 +33,11 @@ for isuj = 1:numel(SubDirs)
 end
 
 setsSelected = 1:numel(ALLEEG);
-clusterNumber = 7;
+clusterNumber = 5;
 
-setTables = pop_CheckData(ALLEEG, setsSelected, clusterNumber);
+[setTables, ~, EEGOut,fig_h] = pop_CheckData(ALLEEG, setsSelected, clusterNumber);
+
+ delete(fig_h);
 
 
 

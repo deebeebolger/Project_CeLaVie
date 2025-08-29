@@ -40,7 +40,7 @@ for counter = 1 : numel(SelectedSets)
     MapsToUse = [];
     for s = 1:nSegs
         if ClustPar.GFPPeaks == 1
-            gfp = std(DataIn(currSetIndx).data(:,:,s),1,1);                                                   % Calculate GFP for current dataset
+            gfp = std(DataIn(currSetIndx).data(:,:,s),1,1);                                                     % Calculate GFP for current dataset
             IsGFPPeak = find([false (gfp(1,1:end-2) < gfp(1,2:end-1) & gfp(1,2:end-1) > gfp(1,3:end)) false]);  % Find GFP peaks
             if numel(IsGFPPeak) > MapsPerSegment(s) && MapsPerSegment(s) > 0
                 idx = randperm(numel(IsGFPPeak));

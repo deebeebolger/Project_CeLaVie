@@ -18,7 +18,7 @@ fpathAll = {};
 main_dir = fileparts(parentdir);
 fnameAll = [fnameAll; {filename}];
 fpathAll = [fpathAll; {filepath}];
-analysisType = 'combine_Microstates';    % Or 'find_Microstates'  'sortMaps'
+analysisType = 'compare_Microstates';    % Or 'find_Microstates'  'sortMaps' 'combine_Microstates'
 
 
 if ~ischar(filename)
@@ -36,9 +36,6 @@ allconditions = unique(setname_split(:,:,1));
 if numel(allconditions)>1
     conditionCurr = [];
 end
-
-
-
 
 
 if strcmp(analysisType, 'find_Microstates')
@@ -64,8 +61,7 @@ if strcmp(analysisType, 'find_Microstates')
     savepath = fullfile(cd, 'Data', 'Microstate');
 
     DataOut = CLV_findMS_maps(DataIn, SelectedSets, ClustPar, TTFrD);
-
-
+ 
     for counter = 1:numel(SelectedSets)
         currfilename = [DataOut(counter).setname, '_MSMaps'];
         EEG = pop_saveset(DataOut(counter), 'filename', currfilename, 'filepath', savepath);
@@ -138,7 +134,7 @@ elseif strcmp(analysisType, 'sortMaps')
     fnameAll = {};
     fpathAll = {};
 
-    templateDataset = 'published'; % Could also 'GMdataset' (Grand Mean dataset) or 'own'
+    templateDataset = 'GMdataset'; % Could also 'GMdataset' (Grand Mean dataset) or 'own'
 
     [fname2sort, fpath2sort] = uigetfile({ '*.set' 'choose .set files'}, 'Choose the datasets to sort ', 'multiselect', 'on');
     [parentdir, ~,~] = fileparts(fpath2sort);
@@ -158,8 +154,7 @@ elseif strcmp(analysisType, 'sortMaps')
         DataIn_sort = pop_loadset(fnameAll2sort, fpathAll2sort{1,1});
     end
 
-    %% Specifying the templaetset type and loading in the template data.
-    templateDataset = 'published';
+    %% Specifying the templaetset type and loading in the template data. 
 
     if strcmp(templateDataset, 'published')
         % open dialogue box to choose the published dataset to select as
@@ -181,9 +176,9 @@ elseif strcmp(analysisType, 'sortMaps')
 
         fprintf('Loading in the template dataset...\n');
         DataIn_temp = pop_loadset(fname2temp, fpath2temp);
-        DataIn_All = [DataIn_sort, DataIn_temp];
-        selectedSets = 1:numel(DataIn_sort)-1;
-        templateSet  = numel(DataIn_sort);
+        DataIn_All = {DataIn_sort, DataIn_temp};
+        selectedSets = 1:numel(DataIn_All{1,1});
+        templateSet  = 'GMdataset';
 
     elseif strcmp(templateDataset, 'own')
 
@@ -211,7 +206,6 @@ elseif strcmp(analysisType, 'sortMaps')
         fig_fullPath = cellfun(@(x,y) fullfile(x,y), savepath, figname, 'UniformOutput', false);
         cellfun(@(x,y) saveas(x,y), fig_h, fig_fullPath, 'UniformOutput', false);
     end
-
 
 elseif strcmp(analysisType, 'compareMaps')
     
@@ -246,7 +240,7 @@ elseif strcmp(analysisType, 'compareMaps')
 
     SharedVar_name = [DataIn_compare.setname,'_shared variances.csv'];
     SharedVarTable = [];
-    SharedVarTable = CLV_CompareMSMaps(DataIn_compare, [], 1, 'Custo2017', 7, fullfile(saveSharedVar, SharedVar_name));
+    SharedVarTable = CLV_CompareMSMaps(DataIn_compare, [], 1, 'Custo2017', 4, fullfile(saveSharedVar, SharedVar_name));
 
 end
 

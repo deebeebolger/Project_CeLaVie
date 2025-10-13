@@ -93,17 +93,28 @@ if iscell(EEGIn{1,1})
     HasChildren   = arrayfun(@(x) DoesItHaveChildren(EEGIn{1,1}(x)), AvailableSets);
     ChosenTemplate = EEGIn{1,2};
 elseif isstruct(EEGIn{1,1})
-    HasMS = cell2mat(arrayfun(@(x) clv_hasMicrostates(EEGIn{1,x}), 1:numel(EEGIn), 'UniformOutput',false)); % Call of subfunction to check that input datasets have microstate maps.
-    HasDyn = cell2mat(arrayfun(@(x) clv_isDynamicsSet(EEGIn{1,x}), 1:numel(EEGIn), 'UniformOutput',false)); % Call of subfunction to check if input datasets are dynamic sets.
-    usingPublished = cell2mat(arrayfun(@(x) clv_isPublishedSet(EEGIn{1,x}, {TemplateSet}), 1:numel(EEGIn), 'UniformOutput',false));
-    AvailableSets = find(HasMS & ~HasDyn & ~usingPublished);
-    HasChildren = cell2mat(arrayfun(@(x) clv_DoesItHaveChildren(EEGIn{1,x}), AvailableSets, 'UniformOutput',false));
+    
+    % Test the individual-level datasets to be sorted
+    HasMS1 = cell2mat(arrayfun(@(x) clv_hasMicrostates(EEGIn{1,1}(x)), 1:numel(EEGIn{1,1}), 'UniformOutput',false)); % Call of subfunction to check that input datasets have microstate maps.
+    HasDyn1 = cell2mat(arrayfun(@(x) clv_isDynamicsSet(EEGIn{1,1}(x)), 1:numel(EEGIn{1,1}), 'UniformOutput',false)); % Call of subfunction to check if input datasets are dynamic sets.
+    usingPublished1 = cell2mat(arrayfun(@(x) clv_isPublishedSet(EEGIn{1,1}(x), {TemplateSet}), 1:numel(EEGIn{1,1}), 'UniformOutput',false));
+
+    % Test the grand-mean template dataset.
+    HasMS2 = cell2mat(arrayfun(@(x) clv_hasMicrostates(EEGIn{1,2}(x)), 1:numel(EEGIn{1,2}), 'UniformOutput',false));
+    HasDyn2 = cell2mat(arrayfun(@(x) clv_isDynamicsSet(EEGIn{1,2}(x)), 1:numel(EEGIn{1,2}), 'UniformOutput',false));
+    usingPublished2 = cell2mat(arrayfun(@(x) clv_isPublishedSet(EEGIn{1,2}(x), {TemplateSet}), 1:numel(EEGIn{1,2}), 'UniformOutput',false));
+
+    AvailableSets_Ind = find(HasMS1 & ~HasDyn1 & ~usingPublished1);
+    AvailableSets_Temp = find(HasMS2 & ~HasDyn2 & ~usingPublished2);
+
+    HasChildren1 = cell2mat(arrayfun(@(x) clv_DoesItHaveChildren(EEGIn{1,1}(x)), AvailableSets_Ind, 'UniformOutput',false));
+    HasChildren2 = cell2mat(arrayfun(@(x) clv_DoesItHaveChildren(EEGIn{1,2}(x)), AvailableSets_Temp, 'UniformOutput',false));
     ChosenTemplate = EEGIn{1,2}; 
+    usingPublished = [sum(usingPublished1) sum(usingPublished2)];
 end
 
-AvailableIndSets = AvailableSets(~HasChildren);  % Find the individual datasets - those that do not have children
-AvailableMeanSets = AvailableSets(HasChildren);  % Find the grandmean datasets - those with children.A
-
+AvailableIndSets = AvailableSets_Ind(~HasChildren1);  % Find the individual datasets - those that do not have children
+AvailableMeanSets = AvailableSets_Temp(HasChildren2);  % Find the grandmean datasets - those with children.A
 
 %% Verifying the input TemplateSet.
 
@@ -119,15 +130,26 @@ if ischar(TemplateSet) && ~strcmp(TemplateSet, 'own')   % A published micro-stat
     end
 end
 
-
 % Need to add code to verify if a dataset is selected as a template set.
 
-%% Verify compatibility between selected sets to sort and template set. This check is carried out if we are sorting microstate datasets based on a sorted template dataset,
-%  defined as "own".
-%  If the template set chosen is a mean set, make sure it is a parent
-%  set of all the selected sets.
+%% If datasets are being sorted based on a grand-mean dataset. Need to ensure that the datasets being sorted are children of the grand-mean dataset.
 
+if strcmp(TemplateSet, 'GMdataset')
+    gmchildren = {ChosenTemplate.msinfo.children}; % Find the children of the grand-mean dataset.
+    
+    if sum(cell2mat(arrayfun(@(x) ~isfield(EEGIn{1,1}(x).msinfo, 'children'), 1:numel(EEGIn{1,1}), 'UniformOutput',false))) == numel(EEGIn{1,1})
 
+        arrayfun(@(x) fprintf('The current dataset to be sorted : %s is an individual-level dataset.\n', EEGIn{1,1}(x).setname), 1:numel(EEGIn{1,1}), 'UniformOutput', false)
+        fprintf('Checking if is one of the children of the grand-mean template set...\n')
+        ischildren = cell2mat(arrayfun(@(x) sum(ismember(gmchildren{1,1}, EEGIn{1,1}(x).setname)), 1:numel(EEGIn{1,1}), 'UniformOutput', false));  % Comparing the children of template dataset with datasets to sorted.
+        
+        if sum(ischildren)== numel(EEGIn{1,1})
+            fprintf('The individual set, %s, is a child of the grand-mean template dataset.\n',EEGIn{1,1}.setname)
+        end
+
+    end
+
+end
 
 %% Verify the number of classes defined.
 %  Check that the number of classes defined falls within the
@@ -138,8 +160,6 @@ if matches('own', TemplateSet) && matches('all', TemplateClassNum)
     temperror_Message = sprintf('The TemplateClassNum argument cannot be set to own if the TemplateSet argurment is all.\n '); 
     error(temperror_Message); 
 end
-
-
 
 %% Verifications prior to sorting and sorting of microstate maps.
 %  If TemplateSet is defined as "own", verify that the template dataset
@@ -153,10 +173,6 @@ if matches('none', SortMode)
     errorMessage = sprintf('Selected template solution %i of template set %s is unsorted. Please sort before using as a template solution.', TemplateClasses, TemplateName);
     error(errorMessage);
 end
-
-% if all(ismember(classRange, Classes))
-%     Classes = 'all';
-% end
 
 if Stepwise
 
@@ -184,14 +200,14 @@ else  % if not Stepwise
         
         if strcmpi(ClassNum, 'all')
 
-            if iscell(EEGIn)        % The case if templateset is a published templateset.
+            if iscell(EEGIn)       
                 sortClasses = EEGIn{1,1}(sIndex).msinfo.ClustPar.MinClasses:EEGIn{1,1}(sIndex).msinfo.ClustPar.MaxClasses;
-            elseif isstruct(EEGIn)  % The case if the templateset is a grandmean templateset.
+            elseif isstruct(EEGIn)  
                  sortClasses = EEGIn(sIndex).msinfo.ClustPar.MinClasses:EEGIn(sIndex).msinfo.ClustPar.MaxClasses;
             end
 
         else
-            sortClasses = Classes;
+            sortClasses = ClassNum;
         end
 
         for nCnt = 1: numel(sortClasses)
@@ -224,9 +240,10 @@ else  % if not Stepwise
             if strcmpi(TemplateSet, 'own') && (n == TemplateClassesToUse)
                 fprintf('Skipping class number as own maps are being sorted by the same solution. \n')
             end
+
             % or if a mean set is being sorted by itself
             if ~strcmpi(TemplateSet, 'own') && sum(usingPublished)==0
-                if strcmp(TemplateName, EEGIn(sIndex).setname) && (n == TemplateClassesToUse)
+                if strcmp(ChosenTemplate.setname, EEGIn{1,1}(sIndex).setname) && (n == TemplateClassesToUse)
                     fprintf('Skipping class number as the mean set is being sorted by itself. \n')
                 end
             end
@@ -252,10 +269,10 @@ else  % if not Stepwise
                     TemplateMaps      = ChosenTemplate.msinfo.MSMaps(TemplateClassesToUse).Maps * GlobalToLocal';
                 end
             else
-                MapsToSort = zeros(1, n, EEGIn(sIndex).nbchan);
-                MapsToSort(1,:,:) = EEGIn(sIndex).msinfo.MSMaps(n).Maps;
-                ChosenTemplate    = EEGIn(sIndex);
-                TemplateMaps      = EEGIn(sIndex).msinfo.MSMaps(TemplateClassesToUse).Maps;
+                MapsToSort = zeros(1, n, EEGIn{1,1}(sIndex).nbchan);
+                MapsToSort(1,:,:) = EEGIn{1,1}(sIndex).msinfo.MSMaps(n).Maps;
+                ChosenTemplate    = EEGIn{1,1}(sIndex);
+                TemplateMaps      = EEGIn{1,1}(sIndex).msinfo.MSMaps(TemplateClassesToUse).Maps;
             end
 
             % If the template set has unassigned maps, remove them (only

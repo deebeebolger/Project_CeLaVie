@@ -11,5 +11,7 @@ For each participant, the cap size is extracted from “participants.csv” file
 
  ![Biosemi 128 electrode configuration](https://github.com/deebeebolger/Project_CeLaVie/blob/main/DataflowChart_pages/Biosemi128_channels.png)
 
+ Plot of the channel layout of 128-channel 10-20 configuration for a small Biosemi 128-channel cap.
+
  
 

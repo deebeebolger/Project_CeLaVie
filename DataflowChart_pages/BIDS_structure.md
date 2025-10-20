@@ -6,4 +6,6 @@ The EEG along with its accompanying meta data has been used to structure the dat
 
 Figure 1: From Pernet, C.R., Appelhoff, S., Gorgolewski, K.J. et al. EEG-BIDS, an extension to the brain imaging data structure for electroencephalography. Sci Data 6, 103 (2019).
 
+ ![BIDS example](https://github.com/deebeebolger/Project_CeLaVie/blob/main/DataflowChart_pages/Celavie_BIDS_structure.png)
+
 > The processed data is saved in the “derivatives” folder in which there is a folder par participant. 

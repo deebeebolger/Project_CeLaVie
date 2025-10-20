@@ -22,6 +22,7 @@ click EXRej "https://github.com/deebeebolger/Project_CeLaVie/blob/main/DataflowC
 EXRej --> AddRS(Calculate and add downsampling info to RELAX config)
 click AddRS "https://github.com/deebeebolger/Project_CeLaVie/blob/main/DataflowChart_pages/Downsampling.md" "Link"
 AddRS --> AddChan(Add channel coordinate information to EEG structure)
+click AddChan "https://github.com/deebeebolger/Project_CeLaVie/blob/main/DataflowChart_pages/Add_Channels_coordinates.md" "Link"
 
 
 

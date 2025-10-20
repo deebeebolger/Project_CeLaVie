@@ -15,5 +15,5 @@ classDef grey fill:#979A9B,stroke:#000,stroke-width:2px,color:#fff
 Config([Create RELAX config *.mat file]):::blue -->
 BIDS([Prepare BIDS structure]):::blue
 click Config "https://github.com/deebeebolger/Project_CeLaVie/blob/main/DataflowChart_pages/Create_RELAX_conf_file.md" "Link"
-click BIDS "https://github.com/deebeebolger/Project_CeLaVie/tree/main/DataflowChart_pages" "Link"
+click BIDS "https://github.com/deebeebolger/Project_CeLaVie/blob/main/DataflowChart_pages/BIDS_structure.md" "Link"
 ```

@@ -6,5 +6,5 @@ To be able to run the pipeline on your own computer, you will need to change the
 2. **Relax_cfg.myPath** : Path to the raw EEG data.
 3. **Relax_cfg.OutputPath** : Path to the folder in which the processed data will be saved. This directory will be automatically created if not already present.
 
-The configuration file is saved as a * *.json * file for each subject and its title takes the following form :
+The configuration file is saved as a _*.json_ file for each subject and its title takes the following form :
 

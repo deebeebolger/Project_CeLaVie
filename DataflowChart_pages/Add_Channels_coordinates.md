@@ -9,3 +9,5 @@ The channel coordinates are provided by 4 coordinates files; each coordinates fi
 
 For each participant, the cap size is extracted from “participants.csv” file and, based on this, the corresponding coordinates *.mat file is automatically applied. The coordinates in the *.mat file is added to EEG.chanlocs structure of the participant’s EEG structure. 
 
+ ![BIDS example](https://github.com/deebeebolger/Project_CeLaVie/blob/main/DataflowChart_pages/Celavie_BIDS_structure.png)
+

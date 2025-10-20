@@ -1,0 +1,1 @@
+The function CLV_CreateRELAX() creates the RELAX_cfg.mat. This is the configuration structure containing the parameters that need to be defined prior to running the RELAX preprocessing pipeline. The following is the link to the CLV_CreateRELAX() function on Github.

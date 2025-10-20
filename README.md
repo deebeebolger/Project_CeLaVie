@@ -12,3 +12,11 @@ The pipeline proposed by the RELAX toolbox also applies functions from the **PRE
 
 Below is presented an overview of the data preprocessing and analysis steps. 
 <img title="Celavie data processing pipeline overview." alt="Alt text" src="/images/microstate_analysis_pipeline_flowchartv2.png">
+
+```mermaid
+graph TD;
+    A-->B;
+    A-->C;
+    B-->D;
+    C-->D;
+```

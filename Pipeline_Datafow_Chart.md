@@ -21,6 +21,7 @@ BIDS --> Ld(Load current dataset, *.bdf or *.set formats):::orange
 click EXRej "https://github.com/deebeebolger/Project_CeLaVie/blob/main/DataflowChart_pages/Exclude_external_chans.md" _blank
 EXRej --> AddRS(Calculate and add downsampling info to RELAX config)
 click AddRS "https://github.com/deebeebolger/Project_CeLaVie/blob/main/DataflowChart_pages/Downsampling.md" "Link"
+AddRS --> AddChan(Add channel coordinate information to EEG structure)
 
 
 

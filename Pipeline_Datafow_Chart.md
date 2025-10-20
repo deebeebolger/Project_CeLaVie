@@ -19,6 +19,8 @@ click BIDS "https://github.com/deebeebolger/Project_CeLaVie/blob/main/DataflowCh
 BIDS --> Ld(Load current dataset, *.bdf or *.set formats):::orange
 --> EXRej([Exclude external channels]):::green
 click EXRej "https://github.com/deebeebolger/Project_CeLaVie/blob/main/DataflowChart_pages/Exclude_external_chans.md" _blank
+EXRej --> AddRS(Calculate and add downsampling info to RELAX config)
+
 
 
 ```

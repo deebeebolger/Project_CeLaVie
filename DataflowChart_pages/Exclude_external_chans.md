@@ -5,8 +5,8 @@ In the RELAX_cfg file, this parameter is called ElectrodesToDelete. This informa
 
 Those channels to reject are defined in the RELAX config structure as follows :
 
-'''
+```
 RELAX_cfg.ElectrodesToDelete = {'GSR1', 'GSR2', 'Erg1', 'Erg2', 'Resp', 'Plet', 'Temp', 'EXG1','EXG2', 'EXG3',...
         'EXG4', 'EXG5', 'EXG6', 'EXG7', 'EXG8'};
-'''
+```
 

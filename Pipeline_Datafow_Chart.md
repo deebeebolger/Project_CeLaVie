@@ -14,4 +14,5 @@ classDef grey fill:#979A9B,stroke:#000,stroke-width:2px,color:#fff
 
 Config([Create RELAX config *.mat file]):::blue -->
 BIDS([Prepare BIDS structure]):::blue
+click Config "DataflowChart_pages/Create_RELAX_conf_file.md" "Link"
 ```

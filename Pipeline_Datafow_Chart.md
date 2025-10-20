@@ -23,7 +23,9 @@ EXRej --> AddRS(Calculate and add downsampling info to RELAX config)
 click AddRS "https://github.com/deebeebolger/Project_CeLaVie/blob/main/DataflowChart_pages/Downsampling.md" "Link"
 AddRS --> AddChan(Add channel coordinate information to EEG structure)
 click AddChan "https://github.com/deebeebolger/Project_CeLaVie/blob/main/DataflowChart_pages/Add_Channels_coordinates.md" "Link"
-AddChan --> ScalpRej([Delete scalp channels marked for rejection]):::green
+AddChan --> BadChanDetect(Detect noisy electrodes - PREP method) :: green
+BadChanDetect --> BadChanTimeDetect(Detect noisy electrodes and time intervals - MAD method) :: green
+BadChanTimeDetect --> ScalpRej([Delete scalp channels marked for rejection]):::green
 ScalpRej --> Notch([Apply notch filter, 4th order Butterworth: 47Hz - 53Hz]):::green
 click Notch "https://github.com/deebeebolger/Project_CeLaVie/blob/main/DataflowChart_pages/Add_Channels_coordinates.md" "Link"
 ```

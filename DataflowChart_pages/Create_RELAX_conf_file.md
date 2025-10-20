@@ -10,3 +10,5 @@ The configuration file is saved as a _*.json_ file for each subject and its titl
 
  <code style="color : blue"> sub-XX_Relax_config.json</code>
 
+ > If the user decides to change a parameter value, they should change the value within the **CLV_CreateRelax()** function and ensure that the same parameters are applied for all participants. 
+

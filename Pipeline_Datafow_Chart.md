@@ -18,5 +18,5 @@ click Config "https://github.com/deebeebolger/Project_CeLaVie/blob/main/Dataflow
 click BIDS "https://github.com/deebeebolger/Project_CeLaVie/blob/main/DataflowChart_pages/BIDS_structure.md" "Link"
 BIDS --> Ld(Load current dataset, *.bdf or *.set formats):::orange
 --> EXRej([Exclude external channels]):::green
-click EXRej "https://github.com/deebeebolger/Project_CeLaVie/blob/main/DataflowChart_pages/BIDS_structure.md" _blank
+click EXRej "https://github.com/deebeebolger/Project_CeLaVie/new/main/DataflowChart_pages/Excude_external_chans.md" _blank
 ```

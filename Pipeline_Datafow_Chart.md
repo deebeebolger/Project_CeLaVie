@@ -33,5 +33,4 @@ RSamp -->|Plot Channel Spectra|Prep([Detect noisy channels: PREP pipeline functi
 Prep --> EpClean([Epoch data to detect extremely noisy time periods: 1second epochs]):::mintgreen
 click Prep "https://github.com/deebeebolger/Project_CeLaVie/blob/main/DataflowChart_pages/BadChannelDetect_PREP.md" "Link"
 click EpClean "https://github.com/deebeebolger/Project_CeLaVie/blob/main/DataflowChart_pages/Bad_ChannelTime_Detect_MAD.md" "Link"
-
 ```

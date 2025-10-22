@@ -34,4 +34,5 @@ click Notch "https://github.com/deebeebolger/Project_CeLaVie/blob/main/DataflowC
 Notch --> HPfilt([Apply high-pass filter, 4th order Butterworth : 0.25Hz]):::green
 HPfilt --> RSamp([Downsample the data]):::green
 RSamp -->|Plot Channel Spectra|Prep([Detect noisy channels: PREP pipeline function]):::mintgreen
+Prep --> EpClean([Epoch data to detect extremely noisy time periods: 1second epochs]):::mintgreen
 ```

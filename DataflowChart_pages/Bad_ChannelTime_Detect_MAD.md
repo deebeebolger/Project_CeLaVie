@@ -32,3 +32,5 @@ Slope of log frequency, log power below which to reject as drift without neural 
 
 - In GUI : **Log-frequency Log-power for detecting drift threshold** : ***Relax_cfg.ExtremeDriftSlopeThreshold*** = -4
 
+> Detected time periods with extreme artifacts are marked with **NaN** in the cleaning templates applied in the **Multi-channel Wiener Filtering (MWF)** stage of preprocessing. These time periods are ignored
+> when the MWF constructs the cleaning templates. These time periods are also excluded from the data prior to IC decomposition. 

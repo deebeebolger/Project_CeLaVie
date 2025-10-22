@@ -24,15 +24,10 @@ click AddRS "https://github.com/deebeebolger/Project_CeLaVie/blob/main/DataflowC
 AddRS --> AddChan(Add channel coordinate information to EEG structure)
 click AddChan "https://github.com/deebeebolger/Project_CeLaVie/blob/main/DataflowChart_pages/Add_Channels_coordinates.md" "Link"
 AddChan --> ScalpRej([Delete scalp channels initially marked for rejection]):::green
-ScalpRej --> BadChanDetect(Detect noisy electrodes - PREP method):::green
-ScalpRej --> BadChanTimeDetect(Detect noisy electrodes and time intervals - MAD method):::green
-click BadChanDetect "https://github.com/deebeebolger/Project_CeLaVie/blob/main/DataflowChart_pages/BadChannelDetect_PREP.md" "Link"
-click BadChanTimeDetect "https://github.com/deebeebolger/Project_CeLaVie/blob/main/DataflowChart_pages/Bad_ChannelTime_Detect_MAD.md" "Link"
-BadChanDetect --> Notch([Apply notch filter, 4th order Butterworth: 47Hz - 53Hz]):::green
-BadChanTimeDetect --> Notch([Apply notch filter, 4th order Butterworth: 47Hz - 53Hz]):::green
-click Notch "https://github.com/deebeebolger/Project_CeLaVie/blob/main/DataflowChart_pages/Filtering.md" "Link"
+ScalpRej --> Notch([Apply notch filter, 4th order Butterworth: 47Hz - 53Hz]):::green
 Notch --> HPfilt([Apply high-pass filter, 4th order Butterworth : 0.25Hz]):::green
 HPfilt --> RSamp([Downsample the data]):::green
+click Notch "https://github.com/deebeebolger/Project_CeLaVie/blob/main/DataflowChart_pages/Filtering.md" "Link"
 click HPfilt "https://github.com/deebeebolger/Project_CeLaVie/blob/main/DataflowChart_pages/Filtering.md" "Link"
 RSamp -->|Plot Channel Spectra|Prep([Detect noisy channels: PREP pipeline function]):::mintgreen
 Prep --> EpClean([Epoch data to detect extremely noisy time periods: 1second epochs]):::mintgreen

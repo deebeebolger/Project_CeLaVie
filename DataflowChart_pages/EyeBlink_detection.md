@@ -17,4 +17,4 @@ To facilitate blink detection using this method, channels most likely to present
 - **RELAX_cfg.HEOGRightpattern** = C8, C7, B27, B28, B26, B29, B24, B14, C9
 
 
-![]()
+![Eyeblink channels](https://github.com/deebeebolger/Project_CeLaVie/blob/main/DataflowChart_pages/BlinkChannels_figure.png)

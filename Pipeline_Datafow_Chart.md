@@ -1,3 +1,5 @@
+| :exclamation:  Click on each block of the dataflow chart to view details.    |
+
 ```mermaid
 flowchart TD
 %% Colors %%

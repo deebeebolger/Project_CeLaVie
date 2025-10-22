@@ -33,6 +33,7 @@ BadChanTimeDetect --> Notch([Apply notch filter, 4th order Butterworth: 47Hz - 5
 click Notch "https://github.com/deebeebolger/Project_CeLaVie/blob/main/DataflowChart_pages/Filtering.md" "Link"
 Notch --> HPfilt([Apply high-pass filter, 4th order Butterworth : 0.25Hz]):::green
 HPfilt --> RSamp([Downsample the data]):::green
+click HPfilt "https://github.com/deebeebolger/Project_CeLaVie/blob/main/DataflowChart_pages/Filtering.md" "Link"
 RSamp -->|Plot Channel Spectra|Prep([Detect noisy channels: PREP pipeline function]):::mintgreen
 Prep --> EpClean([Epoch data to detect extremely noisy time periods: 1second epochs]):::mintgreen
 ```

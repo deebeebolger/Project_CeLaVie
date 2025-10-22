@@ -35,4 +35,5 @@ click Prep "https://github.com/deebeebolger/Project_CeLaVie/blob/main/DataflowCh
 click EpClean "https://github.com/deebeebolger/Project_CeLaVie/blob/main/DataflowChart_pages/Bad_ChannelTime_Detect_MAD.md" "Link"
 EpClean --> DelChans([Delete channels exceeding threshold of proportion data with extreme outliers : max. 20% channels]):::mintgreen
 click DelChans "https://github.com/deebeebolger/Project_CeLaVie/blob/main/DataflowChart_pages/Bad_ChannelTime_Detect_MAD.md" "Link"
+DelChans --> Blink([Eye-blink detection via IQR approach]):::mandarine
 ```

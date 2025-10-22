@@ -16,8 +16,19 @@ In the *RELAX_config* file, the above parameters are defined as follows :
 ### MAD (Median Absolute Deviation) from median voltage shift within 1 second epochs
 It is the threshold MAD from the median in all epochs for each electrodes against the same electrode in different epochs. If set lower than 20MAD, it would catch less severe voltage shifts.
 
-In the GUI : **_MAD from median voltage shift_** : *Relax_cfg.ExtremeVoltageShiftThreshold* = 20 MAD
+In the GUI : **_MAD from median voltage shift_** : **Relax_cfg.ExtremeVoltageShiftThreshold** = 20 MAD
 
 ### Absolute Voltage Threshold
-Min and max voltage ($\mu Volts$) threshold beyond which data will be excluded from cleaning and deleted.
+Min and max voltage ($\mu V$) threshold beyond which data will be excluded from cleaning and deleted.
+
+- In GUI : *Absolute voltage shift* : **Relax_cfg.ExtremeAbsoluteVoltageThreshold** = 500 $\mu V$
+
+Other criteria applied in the ```findNoisyChannels()```to detect noisy electrode :
+- In GUI : **Single channel kurtosis** : ***Relax_cfg.ExtremeSingleChannelKurtosisThreshold*** = 8
+- In GUI : **All channel kurtosis** : ***Relax_cfg.ExtremeChannelsKurtosis*** = 8
+
+### Log-power, log-frequency slopes
+Slope of log frequency, log power below which to reject as drift without neural activity. 
+
+- In GUI : **Log-frequency Log-power for detecting drift threshold** : ***Relax_cfg.ExtremeDriftSlopeThreshold*** = -4
 

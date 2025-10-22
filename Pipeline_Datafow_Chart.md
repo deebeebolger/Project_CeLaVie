@@ -28,5 +28,6 @@ ScalpRej --> BadChanDetect(Detect noisy electrodes - PREP method):::green
 ScalpRej --> BadChanTimeDetect(Detect noisy electrodes and time intervals - MAD method):::green
 BadChanDetect --> Notch([Apply notch filter, 4th order Butterworth: 47Hz - 53Hz]):::green
 BadChanTimeDetect --> Notch([Apply notch filter, 4th order Butterworth: 47Hz - 53Hz]):::green
+click BadChanDetect "https://github.com/deebeebolger/Project_CeLaVie/edit/main/DataflowChart_pages/BadChannelDetect_PREP.md" "Link"
 click Notch "https://github.com/deebeebolger/Project_CeLaVie/blob/main/DataflowChart_pages/Filtering.md" "Link"
 ```

@@ -37,4 +37,5 @@ EpClean --> DelChans([Delete channels exceeding threshold of proportion data wit
 click DelChans "https://github.com/deebeebolger/Project_CeLaVie/blob/main/DataflowChart_pages/Bad_ChannelTime_Detect_MAD.md" "Link"
 DelChans --> Blink([Eye-blink detection via IQR approach]):::mandarine
 Blink -->|Record artifact rejection details|SerArrChoice{Multi Wiener Filtering or MWF?}
+click Blink "https://github.com/deebeebolger/Project_CeLaVie/blob/main/DataflowChart_pages/EyeBlink_detection.md" "Link"
 ```

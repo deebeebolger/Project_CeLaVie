@@ -17,3 +17,7 @@ In the *RELAX_config* file, the above parameters are defined as follows :
 It is the threshold MAD from the median in all epochs for each electrodes against the same electrode in different epochs. If set lower than 20MAD, it would catch less severe voltage shifts.
 
 In the GUI : **_MAD from median voltage shift_** : *Relax_cfg.ExtremeVoltageShiftThreshold* = 20 MAD
+
+### Absolute Voltage Threshold
+Min and max voltage (microVolts) threshold beyond which data will be excluded from cleaning and deleted.
+

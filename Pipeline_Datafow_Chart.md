@@ -40,4 +40,6 @@ click DelChans "https://github.com/deebeebolger/Project_CeLaVie/blob/main/Datafl
 DelChans --> Blink([Eye-blink detection via IQR approach]):::mandarine
 Blink -->|Record artifact rejection details|SerArrChoice{Multi Wiener Filtering or MWF?}
 click Blink "https://github.com/deebeebolger/Project_CeLaVie/blob/main/DataflowChart_pages/EyeBlink_detection.md" "Link"
+SerArrChoice -->|No|DoSerArr([Calculate Signal-to-error Ratio and Artifact-to-residue ratio]):::mintgreen
+SerArrChoice -->|Yes| MWF1([Carry out MWF Round 1: Detect and clean muscle artifacts]):::mintgreen
 ```

@@ -6,6 +6,10 @@ This method creates a mask that specifies the localisation of eye-blinks in cont
 
 In the **RELAX config**, the user specifies the probability that the data does not have blinks, as follows :
 - 0 $\implies$ data almost certainly has blinks
+- 1 $\implies$ data might not have blinks
+- 2 $\implies$ data definitely does not have blinks
+
+
 
 
 

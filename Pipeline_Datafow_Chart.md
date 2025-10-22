@@ -34,4 +34,5 @@ Prep --> EpClean([Epoch data to detect extremely noisy time periods: 1second epo
 click Prep "https://github.com/deebeebolger/Project_CeLaVie/blob/main/DataflowChart_pages/BadChannelDetect_PREP.md" "Link"
 click EpClean "https://github.com/deebeebolger/Project_CeLaVie/blob/main/DataflowChart_pages/Bad_ChannelTime_Detect_MAD.md" "Link"
 EpClean --> DelChans([Delete channels exceeding threshold of proportion data with extreme outliers : max. 20% channels]):::mintgreen
+click DelChans "https://github.com/deebeebolger/Project_CeLaVie/blob/main/DataflowChart_pages/Bad_ChannelTime_Detect_MAD.md" "Link"
 ```

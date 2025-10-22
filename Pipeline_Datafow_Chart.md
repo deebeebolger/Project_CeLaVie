@@ -31,4 +31,5 @@ click BadChanTimeDetect "https://github.com/deebeebolger/Project_CeLaVie/blob/ma
 BadChanDetect --> Notch([Apply notch filter, 4th order Butterworth: 47Hz - 53Hz]):::green
 BadChanTimeDetect --> Notch([Apply notch filter, 4th order Butterworth: 47Hz - 53Hz]):::green
 click Notch "https://github.com/deebeebolger/Project_CeLaVie/blob/main/DataflowChart_pages/Filtering.md" "Link"
+Notch --> HPfilt([Apply high-pass filter, 4th order Butterworth : 0.25Hz]):::green
 ```

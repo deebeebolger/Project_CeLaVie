@@ -11,3 +11,9 @@ detect both electrodes and time segments* to mark for rejection :
 For each time window, a channel is deleted if the proportion of its data presenting extreme values exceeds a defined percentage, here **5%**. 
 A maximum proportion of channels that can be deleted based on the above criterion is defined; here this proportion is 20%.
 
+In the *RELAX_config* file, the above parameters are defined as follows :
+
+### MAD (Median Absolute Deviation) from median voltage shift within 1 second epochs
+It is the threshold MAD from the median in all epochs for each electrodes against the same electrode in different epochs. If set lower than 20MAD, it would catch less severe voltage shifts.
+
+In the GUI : **_MAD from median voltage shift_** : *Relax_cfg.ExtremeVoltageShiftThreshold* = 20 MAD

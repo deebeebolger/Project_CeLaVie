@@ -19,5 +19,5 @@ It is the threshold MAD from the median in all epochs for each electrodes agains
 In the GUI : **_MAD from median voltage shift_** : *Relax_cfg.ExtremeVoltageShiftThreshold* = 20 MAD
 
 ### Absolute Voltage Threshold
-Min and max voltage (microVolts) threshold beyond which data will be excluded from cleaning and deleted.
+Min and max voltage ($\micro$Volts) threshold beyond which data will be excluded from cleaning and deleted.
 

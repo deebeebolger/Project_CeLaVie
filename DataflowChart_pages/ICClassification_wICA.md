@@ -27,5 +27,9 @@ This technique, known as wavelet-enhanced ICA (wICA) makes use of wavelet thresh
  
 In the RELAX pipeline wavelet thresholding is carried out only on those ICs detected as artifacts and marked for rejection after classification by the ICLabel plugin. 
 
+ ![IC classified ICLabel](https://github.com/deebeebolger/Project_CeLaVie/blob/main/DataflowChart_pages/sub18_IC_classified.png)
 
+ ![IC classified ICLabel](https://github.com/deebeebolger/Project_CeLaVie/blob/main/DataflowChart_pages/sub18_IC2reject_ICLabel.png)
+
+ ![IC classified ICLabel](https://github.com/deebeebolger/Project_CeLaVie/blob/main/DataflowChart_pages/sub18_IC2reject_waveletthresholding.png)
 

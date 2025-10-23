@@ -11,6 +11,12 @@ Drift detection is carried out with the following function :
 The drift threshold is the mean absolute deviation (MAD) from the median of all electrodes. 
 - In GUI **_Single electrode drift threshold for MWF cleaning_°° : **Relex_cfg.DriftSeverityThreshold** = 10
 
+The maximum proportion of epochs to include in the mask from the drift artifact type.
+- In GUI **_Max proportion marked as drift for MWF cleaning_°° : **Relex_cfg.ProportionWorstEpochsForDrift** = 0.3
+
+The horizontal eye-movement threshold calculated as the MAD deviation from the median. if both lateral electrodes show activity above this threshold for a certain duration ( the number of timepoints (ms) that exceed the horizontal eye-movement threshold), the activity is marked as horizontal eye-movement. 
+
+- In GUI **_Horizontal eye movement threshold (MAD from median) for MWF cleaning_°° : **Relex_cfg.HorizontalEyeMovementThreshold** = 2
 
 
 

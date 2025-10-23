@@ -21,4 +21,12 @@ In GUI **_MWF Delay Period_** : **Relax_cfg.MWFDelayPeriod_ms** = 40
 | :exclamation:  For a delay period of 16 samples, we would need to defined a delay period (in ms) of 31.2ms   |
 |--------------------------------------------------------------------------------------------------------------|
 
+### Multi-channel Wiener Filtering (MWF) : Round 1
+
+The **first round** concerns mainly **_muscle artifact_** cleaning. But eye-blink cleaning can be included in this first round if wished. This implies integrating the eye-blink mask into the noise mask. The first round is carried if : **Relax_cfg.Do_MWF_Once** = 1
+
+#### Muscle activity
+
+Muscle artifacts are dealt with in the first round of MWF. To create a template for the detection of muscle activity for the MWF cleaning, the data is separated into 1second epochs with 500ms overlap.
+
 

@@ -12,4 +12,10 @@ Wiener filters are data-dependent, linear, least square error filters. The coeff
 
 Here, the activity underlying the EEG signal cannot be considered stationary and so blocks of N samples need to be defined. In the pipeline, these N samples define the **MWF delay period** and need this delay period is calculated as a function of the sampling frequency. 
 
-If the desired delay period (D) is 40ms (0.04seconds) then N (the MWF delay period in samples) is given by $N = floor(D * F_s)$ where $F_s$ is the sampling frequency (512Hz)
+If the desired delay period (D) is 40ms (0.04seconds) then N (the MWF delay period in samples) is given by $N = floor(D * F_s)$ where $F_s$ is the sampling frequency (512Hz).
+
+In the current implementation of the pipeline, a delay period of 40 milliseconds is defined, which translates as a delay period (in samples) of **20 samples**.
+
+In GUI **_MWF Delay Period_** : **Relax_cfg.MWFDelayPeriod_ms** = 40
+
+

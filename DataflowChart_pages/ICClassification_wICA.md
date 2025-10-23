@@ -18,6 +18,6 @@ In the current implementation, an IC is considered for rejection if the probabil
 Matlab code defining the criteria for marking for rejection those ICs classified by ICLabel.
 
 
-
+ ![IC classified ICLabel](https://github.com/deebeebolger/Project_CeLaVie/blob/main/DataflowChart_pages/ClassifiedICs_ICLabel.png)
 
 

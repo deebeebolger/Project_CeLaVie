@@ -39,5 +39,9 @@ The following function creates a template of clean and artifacted data to be use
 [continuousEEG, epochedEEG] = RELAX_muscle(continuousEEG, epochedEEG, RELAX_cfg)
 ```
 
+#### Blink activity
+The blink activity is mainly dealt with in the second round of MWF. However, it is also possible to detect eye-blinks in the first round, in which case the eye-blink mask will be integrated into the noise mask. To allow eye-blink cleaning in round 1: 
+- **Relax_cfg.MWFRoundToCleanBlinks** = 1
+
 
 

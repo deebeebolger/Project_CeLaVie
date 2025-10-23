@@ -49,4 +49,6 @@ click MWF2 "https://github.com/deebeebolger/Project_CeLaVie/blob/main/DataflowCh
 DoSerArr --> Reref([Perform robust average re-referencing]):::aubergine
 MWF3 -->|Record processing stats for MWF 3 in RELAX config| Reref:::aubergine
 click MWF3 "https://github.com/deebeebolger/Project_CeLaVie/blob/main/DataflowChart_pages/Multichannel_MWF_round3.md" "Link"
+Reref --> Nanrej([Reject data periods marked as NaN in noise masks]):::aubergine
+
 ```

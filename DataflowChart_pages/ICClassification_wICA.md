@@ -19,5 +19,11 @@ Matlab code defining the criteria for marking for rejection those ICs classified
 
 
  ![IC classified ICLabel](https://github.com/deebeebolger/Project_CeLaVie/blob/main/DataflowChart_pages/ClassifiedICs_ICLabel.png)
+ Figure 1: Example of ICs classified by ICLabel plugin according to the categories: Brain, Muscle, Other, Line Noise. In this case, no IC was marked for rejection. The ICs were computed by the infomax algorithm. 
+
+ ### Wavelet thresholding of classified ICs
+
+This technique, known as wavelet-enhanced ICA (wICA) makes use of wavelet thresholding which can conserve the tempero-spectral structure the artifacts thus allowing the brain activity that leaked into the ICs to be recovered. This implies that the wavelet technique is used to enhance the performance of the ICA artifact suppression and avoid the danger of suppressing brain activity when rejecting ICs. 
+ 
 
 

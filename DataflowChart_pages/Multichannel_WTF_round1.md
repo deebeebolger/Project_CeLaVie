@@ -18,4 +18,7 @@ In the current implementation of the pipeline, a delay period of 40 milliseconds
 
 In GUI **_MWF Delay Period_** : **Relax_cfg.MWFDelayPeriod_ms** = 40
 
+| :exclamation:  For a delay period of 16 samples, we would need to defined a delay period (in ms) of 31.2ms   |
+|--------------------------------------------------------------------------------------------------------------|
+
 

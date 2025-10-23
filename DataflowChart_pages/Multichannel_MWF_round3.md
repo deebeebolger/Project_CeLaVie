@@ -18,6 +18,7 @@ The horizontal eye-movement threshold calculated as the MAD deviation from the m
 
 - In GUI **_Horizontal eye movement threshold (MAD from median) for MWF cleaning_** : **Relex_cfg.HorizontalEyeMovementThreshold** = 2
 
-|:memo: The number of time points (ms) that exceed the horizontal eye-movement threshold within a defined test period before the period is marked for hEOGs. The test time period is calculated as follows ```TestWindow = (2 - HorizontalEyeMovementThreshold) - 1```|
+|:memo: The number of time points (ms) that exceed the horizontal eye-movement threshold within a defined test period before the period is marked for hEOGs. The test time period is calculated as follows 
+```TestWindow = (2 - HorizontalEyeMovementThreshold) - 1```|
 |--------------------------------------------------------------------------------------------------------------|
 

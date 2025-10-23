@@ -29,4 +29,11 @@ The **first round** concerns mainly **_muscle artifact_** cleaning. But eye-blin
 
 Muscle artifacts are dealt with in the first round of MWF. To create a template for the detection of muscle activity for the MWF cleaning, the data is separated into 1second epochs with 500ms overlap.
 
-
+<div class="row">
+  <div class="col-md-8" markdown="1">
+  The log frequency/log power slope above which to mark an artifact as a muscle artifact. The more negative the values, the more muscle artifact is removed..
+  </div>
+  <div class="col-md-4" markdown="1">
+  - In GUI : **_log-frequency Log-power slope muscle artifact threshold for MWF cleaning_**
+  </div>
+</div>

@@ -21,3 +21,6 @@ The horizontal eye-movement threshold calculated as the MAD deviation from the m
 |:memo: The number of time points that exceed the horizontal eye-movement threshold within a defined test period before the period is marked for hEOGs. The test time period is calculated as follows ```TestWindow = (2 - HorizontalEyeMovementThreshold) - 1```|
 |--------------------------------------------------------------------------------------------------------------|
 
+A buffer window that defines masking periods before and after the time where the hEOGs exceed threshold is also defined.
+- **Relax_cfg.HorizontalEyeMovementFocus** = 200 (ms)
+

@@ -11,3 +11,13 @@ As explained for the blink detection via IQR step, in the second round of MWF, t
 In current implementation of the pipeline :
 In GUI **_ Does the data contain blinks?_** : **Relax_cfg.ProbabilityDataHasNoBlinks** = 0
 
+The aim is to detect eye-blinks that were masked my muscle activity and, thus, missed in round one of MWF.
+To detect eye-blinks, a copy of data was bandpass filtered using a 4th order Butterworth filter between 1-25Hz. Data in channels identified as blink-relevant was averaged. And blinks were marked as the maximum point within each time-period that exceeded the value of the upper quartile of all voltages + the interquartile range (IQR)*3. 
+This is carried out by the function in the following code if it is specified that the probability that the dataset does not have blinks is 0. 
+
+```
+[continuousEEG, epochedEEG] = RELAX_blinks_IQR_method(continuousEEG, epochedEEG,...
+ RELAX_cfg)
+```
+
+

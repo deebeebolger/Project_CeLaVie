@@ -28,6 +28,6 @@ Thus, a blink mask was created for MWF cleaning by marking the 800ms surrounding
 - In GUI **_Left sided HEOG affected electrodes_** : **Relax_cfg.HEOGLeftpattern** = C30, D7, C8, D9, D23, D10, D22, D24, C31.
 - In GUI **_Right-sided HEOG affected electrodes_** : **Relax_cfg.HEOGRightpattern** = C8, C7, B27, B28, B26, B29, B24, B14, C9.
 
- 
+ ![Eyeblink channels](https://github.com/deebeebolger/Project_CeLaVie/blob/main/DataflowChart_pages/BlinkChannels_figure.png)
 
 

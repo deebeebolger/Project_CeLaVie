@@ -55,5 +55,6 @@ Nanrej --> ICAInfomax([Perform ICA using the Infomax algorithm]):::red
 ICAInfomax --> wICA([Perform wavelet-enhanced ICA on artifact-related ICs detected by ICLabel function]):::red
 click ICAInfomax "https://github.com/deebeebolger/Project_CeLaVie/blob/main/DataflowChart_pages/ICA_Infomax.md" "Link"
 wICA --> CCM([Compute cleaned metrics]):::grey
+click wICA "https://github.com/deebeebolger/Project_CeLaVie/blob/main/DataflowChart_pages/ICClassification_wICA.md" "Link"
 CCM -->|Record warnings about potential issues in RELAX config|Interp([Interpolate rejected channels using Spherical Spline Interpolation]):::grey
 ```

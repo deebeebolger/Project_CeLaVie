@@ -1,1 +1,1 @@
-## Multi-channel Multi-Wiener Filtering : Round 2
+## Multi-channel Wiener filters : Round 2

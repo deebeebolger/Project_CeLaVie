@@ -48,4 +48,5 @@ MWF2 --> |Record processing stats for MWF 2 in RELAX config| MWF3([Carry out MWF
 click MWF2 "https://github.com/deebeebolger/Project_CeLaVie/blob/main/DataflowChart_pages/Multichannel_MWF_round2.md" "Link"
 DoSerArr --> Reref([Perform robust average re-referencing]):::aubergine
 MWF3 -->|Record processing stats for MWF 3 in RELAX config| Reref:::aubergine
+click MWF3 "https://github.com/deebeebolger/Project_CeLaVie/blob/main/DataflowChart_pages/Multichannel_MWF_round3.md" "Link"
 ```

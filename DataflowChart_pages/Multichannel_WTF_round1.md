@@ -32,4 +32,12 @@ Muscle artifacts are dealt with in the first round of MWF. To create a template 
 | Explanation   | Parameters    |
 | ------------- | ------------- |
 | The log-frequency/log-power slope above which to mark an artifact as a muscle artifact. The more negative the value the more muscle artifact is removed. Less stringent = -0.31, medium stringency = -0.59 and high stringency = -0.72. The default value for this parameter is -0.59.  | In GUI **_Log-frequency Log-power slope muscle artifact threshold for MWF cleaning_** :  **Relax_cfg.MuscleSlopeThreshold = -0.31 |
-| Content Cell  | Content Cell  |
+| The function ```RELAX_muscle()```creates a template of clean and muscle-artifacted data to be used for cleaning using MWF. __Note that if data has been low-pass filtered below 75Hz, muscle artifact slopes cannot be computed. In this template, muscle artifact periods are marked as **1** and clean periods as **0**; thus creating a mask. | - In GUI , Max proportion marked as muscle for MWF cleaning : **Relax_cfg.MaxProportionOfDataCanBeMarkedAsMuscle** = 0.05  |
+
+The following function creates a template of clean and artifacted data to be used for cleaning MWF :
+```
+[continuousEEG, epochedEEG] = RELAX_muscle(continuousEEG, epochedEEG, RELAX_cfg)
+```
+
+
+

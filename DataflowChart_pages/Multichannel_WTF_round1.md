@@ -11,3 +11,5 @@ The aim, in this step, is to reduce as much as possible these artifact-types whi
 Wiener filters are data-dependent, linear, least square error filters. The coefficients of Wiener filters are calculated so as to minimize the average square distance between the filter output and a desired signal. In its most basic form, Wiener filters assume that signals are stationary processes but by periodically recalculating the filter coefficients for every block of N signal samples, the filter can adapt itself to the average characteristics of the signals within the block. 
 
 Here, the activity underlying the EEG signal cannot be considered stationary and so blocks of N samples need to be defined. In the pipeline, these N samples define the **MWF delay period** and need this delay period is calculated as a function of the sampling frequency. 
+
+If the desired delay period (D) is 40ms (0.04seconds) then N (the MWF delay period in samples) is given by $N = floor(D * F_s)$ where $F_s$ is the sampling frequency (512Hz)

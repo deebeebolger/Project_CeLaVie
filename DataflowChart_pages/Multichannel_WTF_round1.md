@@ -1,3 +1,13 @@
 ## Multi-channel Wiener filters : Round 1
 
 Multi-channel Wiener Filters (MWF) (Borowicz, 2018; Somers et al., 2018) constitutes one of the key artifact reduction components of RELAX pipeline. The MWF are applied sequentially in three rounds to reduce:
+1. Muscle artifacts
+2. Blinks that may have been masked by muscle artifacts
+3. Horizontal eye-movements (hEOG) and drift
+
+The aim, in this step, is to reduce as much as possible these artifact-types while preserving, as much as possible, the neural signal.
+
+### Background
+Wiener filters are data-dependent, linear, least square error filters. The coefficients of Wiener filters are calculated so as to minimize the average square distance between the filter output and a desired signal. In its most basic form, Wiener filters assume that signals are stationary processes but by periodically recalculating the filter coefficients for every block of N signal samples, the filter can adapt itself to the average characteristics of the signals within the block. 
+
+Here, the activity underlying the EEG signal cannot be considered stationary and so blocks of N samples need to be defined. In the pipeline, these N samples define the **MWF delay period** and need this delay period is calculated as a function of the sampling frequency. 

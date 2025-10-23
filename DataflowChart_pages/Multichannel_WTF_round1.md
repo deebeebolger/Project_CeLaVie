@@ -31,5 +31,5 @@ Muscle artifacts are dealt with in the first round of MWF. To create a template 
 
 | Explanation   | Parameters    |
 | ------------- | ------------- |
-| The log-frequency/log-power slope above which to mark an artifact as a muscle artifact.  | In GUI **_Log-frequency Log-power slope muscle artifact threshold for MWF cleaning_** :   |
+| The log-frequency/log-power slope above which to mark an artifact as a muscle artifact. The more negative the value the more muscle artifact is removed. Less stringent = -0.31, medium stringency = -0.59 and high stringency = -0.72. The default value for this parameter is -0.59.  | In GUI **_Log-frequency Log-power slope muscle artifact threshold for MWF cleaning_** :  **Relax_cfg.MuscleSlopeThreshold = -0.31 |
 | Content Cell  | Content Cell  |

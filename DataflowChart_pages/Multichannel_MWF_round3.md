@@ -16,7 +16,7 @@ The maximum proportion of epochs to include in the mask from the drift artifact 
 
 The horizontal eye-movement threshold calculated as the MAD deviation from the median. if both lateral electrodes show activity above this threshold for a certain duration ( the number of timepoints (ms) that exceed the horizontal eye-movement threshold), the activity is marked as horizontal eye-movement. 
 
-- In GUI **_Horizontal eye movement threshold (MAD from median) for MWF cleaning_°° : **Relex_cfg.HorizontalEyeMovementThreshold** = 2
+- In GUI **_Horizontal eye movement threshold (MAD from median) for MWF cleaning_** : **Relex_cfg.HorizontalEyeMovementThreshold** = 2
 
 
 

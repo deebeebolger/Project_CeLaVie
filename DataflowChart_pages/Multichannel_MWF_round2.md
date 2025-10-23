@@ -13,11 +13,21 @@ In GUI **_ Does the data contain blinks?_** : **Relax_cfg.ProbabilityDataHasNoBl
 
 The aim is to detect eye-blinks that were masked my muscle activity and, thus, missed in round one of MWF.
 To detect eye-blinks, a copy of data was bandpass filtered using a 4th order Butterworth filter between 1-25Hz. Data in channels identified as blink-relevant was averaged. And blinks were marked as the maximum point within each time-period that exceeded the value of the upper quartile of all voltages + the interquartile range (IQR)*3. 
+
 This is carried out by the function in the following code if it is specified that the probability that the dataset does not have blinks is 0. 
 
 ```
 [continuousEEG, epochedEEG] = RELAX_blinks_IQR_method(continuousEEG, epochedEEG,...
  RELAX_cfg)
 ```
+Thus, a blink mask was created for MWF cleaning by marking the 800ms surrounding all blink maximums as artifacts.
+
+### Define blink-relevant channels
+
+- In GUI **_Blink affected electrodes_** : **Relax_cfg.BlinkElectrodes** = C29, C17, C16, C30, C8, C28, C27, C21, C13, C10.
+- In GUI **_Left sided HEOG affected electrodes_** : **Relax_cfg.HEOGLeftpattern** = C30, D7, C8, D9, D23, D10, D22, D24, C31.
+- In GUI **_Right-sided HEOG affected electrodes_** : **Relax_cfg.HEOGRightpattern** = C8, C7, B27, B28, B26, B29, B24, B14, C9.
+
+ 
 
 

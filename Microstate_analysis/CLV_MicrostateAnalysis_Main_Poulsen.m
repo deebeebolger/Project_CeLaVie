@@ -1,0 +1,102 @@
+% Microstate Pipeline calculated by the microstate analysis toolbox by
+% Poulsen et al (2018).
+% ------------------------------------------------
+
+% Load in the data.
+
+fnameAll = {};
+fpathAll = {};
+
+cd("/Users/adminlocal/Matlab/Projects/CeLaVie_EEG/");
+data_fpath = fullfile(cd, 'Data','Pretest', 'Derivatives');
+ls = dir(data_fpath);
+allfolders = {ls.name};
+issubject = contains(allfolders, "sub");
+currfolders = allfolders(issubject);
+
+ALLEEG = [];
+
+for subcount = 1:numel(currfolders)
+
+    dircurr = fullfile(data_fpath, currfolders{1,subcount}, 'restingstate_eeg');
+    isset = contains({dir(dircurr).name},'.set');
+    dircurr_names = {dir(dircurr).name};
+    currfolders2load = dircurr_names(1,isset);
+    allcurrdir = repmat({dircurr},1,size(currfolders2load,2));
+    DataIn = cellfun(@(x,y) pop_loadset(x,y), currfolders2load, allcurrdir, 'UniformOutput',false); % Load in the datasets.
+    ALLEEG = cat(2, ALLEEG, DataIn{:});
+
+end
+
+%% Load in the datasets for microstate segmentation.
+
+EEG = [];
+
+[EEG, ALLEEG] = pop_micro_selectdata( EEG, ALLEEG, 'datatype', 'spontaneous', 'avgref', 1, 'normalise', 1, 'MinPeakDist', 20, 'Npeaks', 1000, 'GFPthresh', 0, 'dataset_idx', 1:numel(ALLEEG) );
+
+% Carry out the microstate segmentation using the modified Kmeans
+% algorithm. This is calculated for all the subjects, conditions and groups
+% to yield a grand mean microstate set. This grand-mean set will be used as
+% the prototype to sort the microstate solutions at the subject level. 
+
+
+EEG = pop_micro_segment( ALLEEG(92), 'algorithm', 'modkmeans', 'sorting', 'Global explained variance', 'normalise', 1, 'Nmicrostates', 4:7, 'verbose', 1, 'Nrepetitions', 20, 'fitmeas', 'CV', 'max_iterations', 1000, 'threshold', 1e-06, 'optimised', 1 );
+EEG.setname='GFPPeaks_MSPrototypes_Pretest';
+
+%% Plot the generated protoype microstate clusters.
+%  Plot the Cross Validation (CV) and the Global Explained Variance (GEV)
+%  measures to help decide upon the cluster solution to apply.
+
+pop_micro_plottopo ( EEG ); 
+
+EEG = pop_micro_selectNmicro (EEG, 'plot_range', [], 'Measures', {'CV', 'GEV'}, 'do_subplots',0);
+
+%% Here we try to make the correspondance between the grand-mean prototype microstate solution and a published dataset. 
+%  This will be just a matter of changing the labels of the microstates. 
+
+settings.polarity = 0;
+settings.smooth_width = 3;
+settings.smooth_type = 'windowed';
+settings.smooth_weight = 5;
+settings.max_iterations = 1000;
+settings.threshold = 1e-6;
+
+for counter = 1:numel(ALLEEG)-1
+
+    [L, gmd] = MicroFit(ALLEEG(counter).data, EEG.microstate.prototypes, settings.polarity);
+    ALLEEG(counter).microstate.fit.labels = L;
+    ALLEEG(counter).microstate.fit.GMD = gmd;
+    EEG.microstate.fit.polarity = settings.polarity;
+    
+    %% Temporally smooth microstate labels
+    
+    if strcmp(settings.smooth_type,'windowed')
+        opts.b = settings.smooth_width;
+        opts.lambda = settings.smooth_weight;
+        opts.max_iterations = settings.max_iterations;
+        opts.thresh = settings.threshold;
+    else
+        opts.polarity = settings.polarity;
+        
+        % converting minTime from ms to samples
+        minTime_ms = settings.minTime;
+        minTime_samples = round( minTime_ms * EEG.srate/1000 );
+        opts.minTime = minTime_samples;
+    end
+    
+    
+    labels = MicroSmooth(ALLEEG(1).data, EEG.microstate.prototypes, settings.smooth_type, opts);
+    ALLEEG(counter).microstate.fit.labels = labels;
+    
+    %%
+    
+    INEEG = ALLEEG(counter);
+    INEEG.microstate.prototypes = EEG.microstate.prototypes;
+    INEEG.microstate.data = INEEG.data;
+    MicroPlotSegments(INEEG , 'label_type','backfit', 'plotsegnos', 'all', 'plottopos', 1, 'plot_time', [30000 32000]);
+    
+end
+
+
+
+
